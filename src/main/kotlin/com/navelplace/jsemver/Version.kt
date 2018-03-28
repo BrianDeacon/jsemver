@@ -2,8 +2,6 @@ package com.navelplace.jsemver
 
 import com.navelplace.jsemver.RequirementType.*
 import com.navelplace.jsemver.exceptions.InvalidVersionFormatException
-import com.sun.corba.se.impl.oa.poa.POAPolicyMediatorImpl_NR_UDS
-import org.apache.maven.artifact.versioning.ArtifactVersion
 
 class Version : Comparable<Version> {
 
@@ -24,7 +22,7 @@ class Version : Comparable<Version> {
         }
 
         val MAX_VERSION = Version(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
-        val MIN_VERSION = Version(0,0,0)
+        val MIN_VERSION = Version(Int.MIN_VALUE,Int.MIN_VALUE,Int.MIN_VALUE)
 
         fun isValid(version: String): Boolean {
             return makeMatch(version) != null
@@ -79,7 +77,7 @@ class Version : Comparable<Version> {
         return compareTo(other) < 0
     }
 
-    fun equivalent(other: Version): Boolean {
+    fun equivalentTo(other: Version): Boolean {
         return compareTo(other) == 0
     }
 
@@ -169,8 +167,8 @@ class Version : Comparable<Version> {
 
 data class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: Version, val maxInclusive: Boolean = true) {
     fun contains(version: Version): Boolean {
-        if (minInclusive && version.equivalent(min)) return true
-        if (maxInclusive && version.equivalent(max)) return true
+        if (minInclusive && version.equivalentTo(min)) return true
+        if (maxInclusive && version.equivalentTo(max)) return true
         return version.greaterThan(min) && version.lessThan(max)
     }
 }
@@ -221,8 +219,12 @@ enum class RequirementType {
 class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRequirement, MAVEN) {
 
     companion object {
+        /*
+        Any comma preceded by a ] or ) is the delimiter for:
+        [1.1,2.2],[3.3,4.4),(5.5,6.6.6],(7.7,8.8)
+         */
         val VERSION_GROUPS_REGEX = """
-        (?<=[\]\)])\,
+        (?<=[\]\)])\s*\,
         """.trim().toRegex()
 
         private val open = """
@@ -231,22 +233,43 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
         private val close = """
             [\]\)]
             """.trim()
+        // 0 or 1 or 10 but not 01
+        private val versionNumber = """
+            (?:0|[1-9]\d*)
+            """.trim()
+        // x.y.z
         private val version = """
-            \d*\.\d*(?:\.\d*)?
+            $versionNumber\.$versionNumber(?:\.$versionNumber)?
             """.trim()
+
+        /*
+         1.1,2.2
+         3.3.3,4.4
+         5.5,6.6.6
+         ,8.8
+         9.9,
+         */
         private val versions = """
-            ($version)?\,($version)?
+            ($version)?\s*\,\s*($version)?
             """.trim()
+
+        /*
+        [1.1,2.2],[3.3,4.4),(5.5,6.6],(7.7,8.8)
+         */
         val VERSION_REQUIREMENT_REGEX = """
-        ($open)($versions)($close)
+        ($open)\s*($versions)\s*($close)
         """.trim().toRegex()
 
+        val SINGLE_VERSION_REQUIREMENT_REGEX = """
+            $open\s*($version)\s*$close
+            """.trim().toRegex()
+
+        // [1.0,2.0] -> [1.0.0,2.0.0]
         private fun normalize(value: String): String {
-            if (value.isBlank()) return ""
-            if (value.split(".").size != 3) {
-                return "$value.0"
-            } else {
-                return value
+            return when {
+                value.isBlank() -> ""
+                value.split(".").size != 3 -> "$value.0"
+                else -> value
             }
 
         }
@@ -255,18 +278,29 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
     override fun calculate(rawRequirement: String): Array<VersionRange> {
         val elements: List<String> = rawRequirement.trim().split(VERSION_GROUPS_REGEX)
         return elements.map {
-            if (!it.startsWith("[") && !it.startsWith("(")) {
-                //https://maven.apache.org/enforcer/enforcer-rules/versionRanges.html
-                VersionRange(min=Version(normalize(it)), max = Version.MAX_VERSION)
-            } else {
-                val groups = VERSION_REQUIREMENT_REGEX.find(it.trim())?.groups ?: throw InvalidVersionFormatException(it)
-                val minInclusive = "[" == groups[1]?.value
-                val maxInclusive = "]" == groups[5]?.value
-                var minString = normalize(groups[3]?.value?: "")
-                var maxString = normalize(groups[4]?.value?: "")
-                val min = if (minString.isNotBlank()) Version(minString) else (Version.MIN_VERSION)
-                val max = if (maxString.isNotBlank()) Version(maxString) else (Version.MAX_VERSION)
-                VersionRange(min = min, minInclusive = minInclusive, max = max, maxInclusive = maxInclusive)
+            when {
+                //"1.5"
+                !it.startsWith("[") && !it.startsWith("(") -> {
+                    VersionRange(min=Version(normalize(it)), max = Version.MAX_VERSION)
+                }
+
+                //"[1.5]"
+                SINGLE_VERSION_REQUIREMENT_REGEX.find(it) != null -> {
+                    val version = normalize(SINGLE_VERSION_REQUIREMENT_REGEX.find(it)?.groups?.get(1)?.value?: "")
+                    VersionRange(min = Version(version), max = Version(version))
+                }
+
+                //"[1.5,1.6]"
+                else -> {
+                    val groups = VERSION_REQUIREMENT_REGEX.find(it.trim())?.groups ?: throw InvalidVersionFormatException(it)
+                    val minInclusive = "[" == groups[1]?.value
+                    val maxInclusive = "]" == groups[5]?.value
+                    var minString = normalize(groups[3]?.value?: "")
+                    var maxString = normalize(groups[4]?.value?: "")
+                    val min = if (minString.isNotBlank()) Version(minString) else (Version.MIN_VERSION)
+                    val max = if (maxString.isNotBlank()) Version(maxString) else (Version.MAX_VERSION)
+                    VersionRange(min = min, minInclusive = minInclusive, max = max, maxInclusive = maxInclusive)
+                }
             }
         }.toTypedArray()
     }

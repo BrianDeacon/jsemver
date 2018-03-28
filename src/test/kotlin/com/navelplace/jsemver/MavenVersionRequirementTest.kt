@@ -1,7 +1,9 @@
 package com.navelplace.jsemver
 
+import com.navelplace.jsemver.exceptions.InvalidVersionFormatException
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -33,6 +35,31 @@ class MavenVersionRequirementTest {
     }
 
     @Test
+    fun `Is not bothered by whitespace`() {
+        arrayOf(
+                "[1.2.3,4.5.6]",
+                " [1.2.3,4.5.6] ",
+                "[1.2.3 , 4.5.6]",
+                "[1.2.3, 4.5.6]",
+                "[1.2.3 ,4.5.6]",
+                "[ 1.2.3,4.5.6]",
+                "[1.2.3,4.5.6 ]",
+                "[ 1.2.3,4.5.6 ]",
+                "[ 1.2.3,4.5.6]",
+                "[1.2.3,4.5.6 ]"
+        ).forEach {
+            val req = MavenVersionRequirement(it)
+            assertEquals(1, req[0].min.major)
+            assertEquals(2, req[0].min.minor)
+            assertEquals(3, req[0].min.patch)
+            assertEquals(4, req[0].max.major)
+            assertEquals(5, req[0].max.minor)
+            assertEquals(6, req[0].max.patch)
+
+        }
+    }
+
+    @Test
     fun `Calculates requirements`() {
         val req = MavenVersionRequirement("[1.1,2.2]")
         val expected = VersionRange(min = Version("1.1.0"), max = Version("2.2.0"))
@@ -50,6 +77,31 @@ class MavenVersionRequirementTest {
 
     }
 
+    @Test
+    fun `Will not allow leading zeroes in version number`() {
+        arrayOf(
+                "[01.1.1,1.1.1]",
+                "[1.01.1,1.1.1]",
+                "[1.1.01,1.1.1]",
+                "[1.1.1,01.1.1]",
+                "[1.1.1,1.01.1]",
+                "[1.1.1,1.1.01]",
+                "01.1.1",
+                "1.01.1",
+                "1.1.01"
+        ).forEach {
+            try {
+                MavenVersionRequirement(it)
+                fail("Should have thrown ${InvalidVersionFormatException::class.simpleName} for $it")
+            } catch (e: InvalidVersionFormatException) {}
+        }
+    }
+
+    @Test(expected = InvalidVersionFormatException::class)
+    fun `Will not allow leading zeroes in second version number`() {
+        MavenVersionRequirement("[1.1.1,01.1.1]")
+    }
+
     fun doesMatch(match: MatchResult?, vararg values: String) {
         var j=0
         for (i in arrayOf(1,3,4,5)) {
@@ -60,13 +112,22 @@ class MavenVersionRequirementTest {
     }
 
     @Test
-    fun `Can handle the single version format`() {
+    fun `Can handle the legacy version format`() {
         //According to the Maven spec, an unenclosed version is a minimum
         val req = MavenVersionRequirement("1.5")
         assertEquals(1, req.size())
         assertEquals(VersionRange(min = Version("1.5.0"), max = Version.MAX_VERSION), req[0])
         assertTrue(arrayOf("1.5.0", "1.5.1", "2.4.0").all({ MavenVersionRequirement("1.5").isSatisfiedBy(it)}))
         assertTrue(arrayOf("0.1.1", "1.4.9", "1.5.0-SNAPSHOT").none({ MavenVersionRequirement("1.5").isSatisfiedBy(it)}))
+    }
+
+    @Test
+    fun `Can handle the single version format`() {
+        val req = MavenVersionRequirement("[1.5]")
+        assertEquals(1, req.size())
+        assertEquals(VersionRange(min = Version("1.5.0"), max = Version("1.5.0")), req[0])
+        assertTrue(req.isSatisfiedBy("1.5.0"))
+        assertTrue(arrayOf("0.1.1", "1.4.9", "1.5.0-SNAPSHOT", "1.5.1").none({ req.isSatisfiedBy(it)}))
     }
 
     @Test
