@@ -3,6 +3,10 @@ package com.navelplace.jsemver
 import com.navelplace.jsemver.RequirementType.*
 import com.navelplace.jsemver.exceptions.InvalidVersionFormatException
 
+/**
+ * A Semver class matching the pattern major.minor.patch
+ *
+ */
 class Version : Comparable<Version> {
 
     val raw: String
