@@ -5,7 +5,6 @@ import com.navelplace.jsemver.exceptions.InvalidVersionFormatException
 
 /**
  * A Semver class matching the pattern major.minor.patch
- *
  */
 class Version : Comparable<Version> {
 
