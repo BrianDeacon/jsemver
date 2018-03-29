@@ -1,11 +1,10 @@
 package com.navelplace.jsemver
 
-import com.navelplace.jsemver.exceptions.InvalidVersionFormatException
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
-import kotlin.test.assertEquals
 
 /*
 1.0	x >= 1.0 * The default Maven meaning for 1.0 is everything (,) but with 1.0 recommended. Obviously this doesn't work for enforcing versions here, so it has been redefined as a minimum version.
@@ -31,7 +30,6 @@ class MavenVersionRequirementTest {
         doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("(1.1.1,2.2]"), "(", "1.1.1", "2.2", "]")
         doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("[,2.2]"), "[", "", "2.2", "]")
         doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("[1.1,]"), "[", "1.1", "", "]")
-
     }
 
     @Test
@@ -103,11 +101,9 @@ class MavenVersionRequirementTest {
     }
 
     fun doesMatch(match: MatchResult?, vararg values: String) {
-        var j=0
-        for (i in arrayOf(1,3,4,5)) {
-            val expected = values[j++]?: ""
+        for ((j, i) in arrayOf(1,3,4,5).withIndex()) {
             val actual = match!!.groups[i]?.value?: ""
-            assertEquals(expected, actual)
+            assertEquals(values[j], actual)
         }
     }
 

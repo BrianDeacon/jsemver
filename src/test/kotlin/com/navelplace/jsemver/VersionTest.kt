@@ -1,15 +1,10 @@
 package com.navelplace.jsemver
 
-
-import com.navelplace.jsemver.exceptions.InvalidVersionFormatException
 import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.Arrays
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class VersionTest {
 
@@ -31,6 +26,11 @@ class VersionTest {
                 "1.1.1.",
                 "1.1.1-1.",
                 "1.1.1-+")
+    }
+
+    @Test
+    fun `Constructs from static helper method`() {
+        validVersions.forEach { assertEquals(it, Version.fromString(it).toString()) }
     }
 
     @Test
@@ -74,18 +74,18 @@ class VersionTest {
     @Test
     fun `Can find the prelease version`() {
         val prereleases = arrayOf("1.1.1-SNAPSHOT", "1.1.1-SNAPSHOT+stuff")
-        assertEquals("SNAPSHOT",  Version(prereleases[0]).prerelease)
-        assertTrue(prereleases.all { Version(it).prerelease == "SNAPSHOT" } )
+        assertEquals("SNAPSHOT",  Version(prereleases[0]).preRelease)
+        assertTrue(prereleases.all { Version(it).preRelease == "SNAPSHOT" } )
     }
 
     @Test
     fun `Can find the prelease version when it is dotted`() {
-        assertEquals("foo.bar",  Version("1.1.1-foo.bar").prerelease)
+        assertEquals("foo.bar",  Version("1.1.1-foo.bar").preRelease)
     }
 
     @Test
     fun `Can find the build data`() {
-        assertEquals("bar", Version("1.1.1-foo+bar").build)
+        assertEquals("bar", Version("1.1.1-foo+bar").metadata)
     }
 
     @Test
@@ -107,17 +107,11 @@ class VersionTest {
                 "1.0.0").map { Version(it) }.toTypedArray()
 
         val shuffled = inOrder.clone().toList().shuffled().toTypedArray()
-
         shuffled.sort()
-
         assertArrayEquals(inOrder, shuffled)
 
         val reversed = inOrder.clone().reversed().toTypedArray()
-
         reversed.sort()
-
         assertArrayEquals(inOrder, reversed)
     }
-
-
 }

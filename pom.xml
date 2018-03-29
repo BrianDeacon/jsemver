@@ -47,8 +47,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kotlin.version>1.2.30</kotlin.version>
-        <junit.version>4.11</junit.version>
+        <kotlin.version>1.2.31</kotlin.version>
+        <junit.version>4.12</junit.version>
         <dokka.version>0.9.16</dokka.version>
         <gpg.plugin.version>1.6</gpg.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.7</nexus.staging.maven.plugin.version>
@@ -82,16 +82,6 @@
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-artifact</artifactId>
-            <version>3.2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>RELEASE</version>
         </dependency>
     </dependencies>
 
