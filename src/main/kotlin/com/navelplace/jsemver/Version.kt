@@ -3,7 +3,15 @@ package com.navelplace.jsemver
 import com.navelplace.jsemver.RequirementType.*
 
 /**
- * A class representing a semver pattern major.minor.patch[-preRelease[+metadata]]
+ * Represents a semver pattern `major.minor.patch[-preRelease[+metadata]]`
+ *
+ * @author Brian Deacon (bdeacon@navelplace.com)
+ *
+ * @property major The major version
+ * @property minor The minor version
+ * @property patch The patch version (third element)
+ * @property preRelease The pre-release qualifier
+ * @property metadata The build metadata
  */
 class Version : Comparable<Version> {
 
@@ -14,6 +22,9 @@ class Version : Comparable<Version> {
     val preRelease: String
     val metadata: String
 
+    /**
+     * @suppress
+     */
     companion object {
         private val SEMVER_REGEX = Regex("""
         ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-((0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$
@@ -23,16 +34,38 @@ class Version : Comparable<Version> {
             return SEMVER_REGEX.find(version)
         }
 
-        val MAX_VERSION = Version(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
-        val MIN_VERSION = Version(Int.MIN_VALUE,Int.MIN_VALUE,Int.MIN_VALUE)
+        /**
+         * No [Version](Version) is greater than [MAX_VERSION]
+         */
+        @JvmField val MAX_VERSION = Version(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
 
-        fun isValid(version: String): Boolean {
+        /**
+         * No [Version](Version) is less than [MIN_VERSION]
+         */
+        @JvmField val MIN_VERSION = Version(Int.MIN_VALUE,Int.MIN_VALUE,Int.MIN_VALUE)
+
+        /**
+         * Checks [version] for correct formatting
+         * @param version The string to be tested
+         * @return True if the version string is correctly formatted
+         */
+        @JvmStatic fun isValid(version: String): Boolean {
             return makeMatch(version) != null
         }
 
-        fun fromString(version: String) = Version(version)
+        /**
+         * Constructs a [Version](Version) based on the value of [version]
+         * @param version The string to be converted to a [Version](Version) instance
+         * @return The constructed [Version]
+         * @throws [InvalidVersionFormatException]
+         */
+        @JvmStatic fun fromString(version: String) = Version(version)
     }
 
+    /**
+     * Parses [version] as a Semver-compliant string
+     * @param version The string representation of the [Version](Version)
+     */
     constructor(version: String) {
         raw = version.trim()
         val match = makeMatch(raw) ?: throw InvalidVersionFormatException(version)
@@ -54,8 +87,16 @@ class Version : Comparable<Version> {
         this.metadata = build
     }
 
+    /**
+     * The raw string representation of the [Version](Version).
+     */
     override fun toString() = raw
 
+    /**
+     * Tests for literal object equivalence. For semantic equivalence see [equivalentTo]
+     * @param other The other [Version](Version) to be compared
+     * @see equivalentTo
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -67,30 +108,70 @@ class Version : Comparable<Version> {
         return true
     }
 
+    /**
+     * @suppress
+     */
     override fun hashCode(): Int {
         return raw.hashCode()
     }
 
+    /**
+     * Tests if another [Version](Version) is greater
+     * @param other The other [Version](Version) to be compared
+     * @return True if [other] is semantically newer.
+     */
     fun greaterThan(other: Version): Boolean {
         return compareTo(other) > 0
     }
 
+    /**
+     * Tests if another [Version](Version) is greater
+     * @param other The other [Version] to be compared
+     * @return True if [other](other) is semantically older.
+     */
     fun lessThan(other: Version): Boolean {
         return compareTo(other) < 0
     }
 
+    /**
+     * Tests [other] against this instance for version equivalence.
+     *
+     * For example, `1.1.1-alpha+beta` is semantically equivalent to `1.1.1-alpha+gamma`
+     *
+     * @param other The other [Version](Version) to be compared
+     * @return True if [other] is semantically equivalent.
+     */
     fun equivalentTo(other: Version): Boolean {
         return compareTo(other) == 0
     }
 
+    /**
+     * Parses [versionRequirement] as a [VersionRequirement](VersionRequirement) and tests if this [Version](Version) satisfies the
+     * requirement
+     *
+     * @param versionRequirement The string representation of the [VersionRequirement]
+     * @param type The specific [VersionRequirement](VersionRequirement) implementation as defined by the [RequirementType]
+     * @return True if the requirement is satisfied
+     * @see VersionRequirement
+     * @see RequirementType
+     */
     fun satisfies(versionRequirement: String, type: RequirementType = STRICT): Boolean {
         return satisfies(VersionRequirement.fromString(versionRequirement, type))
     }
 
+    /**
+     * Tests if this [Version](Version) satisfies [versionRequirement]
+     * @param versionRequirement The [VersionRequirement] to test
+     * @return True if the requirement is satisfied
+     * @see RequirementType
+     */
     fun satisfies(versionRequirement: VersionRequirement): Boolean {
         return versionRequirement.isSatisfiedBy(this)
     }
 
+    /**
+     * @suppress
+     */
     override fun compareTo(other: Version): Int {
         var compare = major.compareTo(other.major)
         if (compare != 0) return compare
@@ -167,4 +248,9 @@ class Version : Comparable<Version> {
         }
 }
 
-class InvalidVersionFormatException(format: String): RuntimeException("Invalid version format: $format")
+/**
+ * Indicates a requested version format was invalid.
+ *
+ * @property format The invalid string
+ */
+class InvalidVersionFormatException(val format: String): RuntimeException("Invalid version format: $format")

@@ -90,12 +90,17 @@ class MavenVersionRequirementTest {
         ).forEach {
             try {
                 MavenVersionRequirement(it)
-                fail("Should have thrown ${InvalidVersionFormatException::class.simpleName} for $it")
-            } catch (e: InvalidVersionFormatException) {}
+            } catch(e: Exception) {
+                when(e) {
+                    is InvalidMavenVersionRequirementFormatException,
+                    is InvalidVersionFormatException -> {}
+                    else -> fail("Should have thrown ${InvalidMavenVersionRequirementFormatException::class.simpleName} or ${InvalidVersionFormatException::class.simpleName} for $it")
+                }
+            }
         }
     }
 
-    @Test(expected = InvalidVersionFormatException::class)
+    @Test(expected = InvalidMavenVersionRequirementFormatException::class)
     fun `Will not allow leading zeroes in second version number`() {
         MavenVersionRequirement("[1.1.1,01.1.1]")
     }

@@ -14,4 +14,4 @@ class StrictVersionRequirement(versionRequirement: String): VersionRequirement(v
     }
 }
 
-class InvalidStrictRequirementFormatException(format: String): RuntimeException("Invalid format for STRICT requirement: $format")
+class InvalidStrictRequirementFormatException(format: String): InvalidRequirementFormatException("Invalid format for STRICT requirement: $format")

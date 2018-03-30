@@ -72,7 +72,7 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
 
             //"[1.5,1.6]"
                 else -> {
-                    val groups = VERSION_REQUIREMENT_REGEX.find(it.trim())?.groups ?: throw InvalidVersionFormatException(it)
+                    val groups = VERSION_REQUIREMENT_REGEX.find(it.trim())?.groups ?: throw InvalidMavenVersionRequirementFormatException(it)
                     val minInclusive = "[" == groups[1]?.value
                     val maxInclusive = "]" == groups[5]?.value
                     var minString = normalize(groups[3]?.value?: "")
@@ -85,3 +85,5 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
         }.toTypedArray()
     }
 }
+
+class InvalidMavenVersionRequirementFormatException(format: String): InvalidRequirementFormatException("Invalid format for MavenVersionRequirement: $format")
