@@ -35,12 +35,12 @@ class Version : Comparable<Version> {
         }
 
         /**
-         * No [Version](Version) is greater than [MAX_VERSION]
+         * No [Version] is greater than [MAX_VERSION]
          */
         @JvmField val MAX_VERSION = Version(Int.MAX_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
 
         /**
-         * No [Version](Version) is less than [MIN_VERSION]
+         * No [Version] is less than [MIN_VERSION]
          */
         @JvmField val MIN_VERSION = Version(Int.MIN_VALUE,Int.MIN_VALUE,Int.MIN_VALUE)
 
@@ -54,8 +54,8 @@ class Version : Comparable<Version> {
         }
 
         /**
-         * Constructs a [Version](Version) based on the value of [version]
-         * @param version The string to be converted to a [Version](Version) instance
+         * Constructs a [Version] based on the value of [version]
+         * @param version The string to be converted to a [Version] instance
          * @return The constructed [Version]
          * @throws [InvalidVersionFormatException]
          */
@@ -64,7 +64,7 @@ class Version : Comparable<Version> {
 
     /**
      * Parses [version] as a Semver-compliant string
-     * @param version The string representation of the [Version](Version)
+     * @param version The string representation of the [Version]
      */
     constructor(version: String) {
         raw = version.trim()
@@ -88,13 +88,13 @@ class Version : Comparable<Version> {
     }
 
     /**
-     * The raw string representation of the [Version](Version).
+     * The raw string representation of the [Version].
      */
     override fun toString() = raw
 
     /**
      * Tests for literal object equivalence. For semantic equivalence see [equivalentTo]
-     * @param other The other [Version](Version) to be compared
+     * @param other The other [Version] to be compared
      * @see equivalentTo
      */
     override fun equals(other: Any?): Boolean {
@@ -116,8 +116,8 @@ class Version : Comparable<Version> {
     }
 
     /**
-     * Tests if another [Version](Version) is greater
-     * @param other The other [Version](Version) to be compared
+     * Tests if another [Version] is greater
+     * @param other The other [Version] to be compared
      * @return True if [other] is semantically newer.
      */
     fun greaterThan(other: Version): Boolean {
@@ -125,9 +125,9 @@ class Version : Comparable<Version> {
     }
 
     /**
-     * Tests if another [Version](Version) is greater
+     * Tests if another [Version] is greater
      * @param other The other [Version] to be compared
-     * @return True if [other](other) is semantically older.
+     * @return True if [other] is semantically older.
      */
     fun lessThan(other: Version): Boolean {
         return compareTo(other) < 0
@@ -138,7 +138,7 @@ class Version : Comparable<Version> {
      *
      * For example, `1.1.1-alpha+beta` is semantically equivalent to `1.1.1-alpha+gamma`
      *
-     * @param other The other [Version](Version) to be compared
+     * @param other The other [Version] to be compared
      * @return True if [other] is semantically equivalent.
      */
     fun equivalentTo(other: Version): Boolean {
@@ -146,21 +146,21 @@ class Version : Comparable<Version> {
     }
 
     /**
-     * Parses [versionRequirement] as a [VersionRequirement](VersionRequirement) and tests if this [Version](Version) satisfies the
+     * Parses [versionRequirement] as a [VersionRequirement] and tests if this [Version] satisfies the
      * requirement
      *
      * @param versionRequirement The string representation of the [VersionRequirement]
-     * @param type The specific [VersionRequirement](VersionRequirement) implementation as defined by the [RequirementType]
+     * @param type The specific [VersionRequirement] implementation as defined by the [RequirementType]
      * @return True if the requirement is satisfied
      * @see VersionRequirement
      * @see RequirementType
      */
-    fun satisfies(versionRequirement: String, type: RequirementType = STRICT): Boolean {
+    fun satisfies(versionRequirement: String, type: RequirementType = SIMPLE): Boolean {
         return satisfies(VersionRequirement.fromString(versionRequirement, type))
     }
 
     /**
-     * Tests if this [Version](Version) satisfies [versionRequirement]
+     * Tests if this [Version] satisfies [versionRequirement]
      * @param versionRequirement The [VersionRequirement] to test
      * @return True if the requirement is satisfied
      * @see RequirementType

@@ -4,16 +4,18 @@ package com.navelplace.jsemver
  * Indicates a specific [VersionRequirement] implementation
  */
 enum class RequirementType {
-    STRICT,
+    SIMPLE,
     MAVEN
 }
 
 /**
- * Specifies restrictions against which a given [Version](Version) can be tested.
+ * Specifies restrictions against which a given [Version] can be tested.
  *
  * Specific implementations per standard specified by [RequirementType]
  *
- * @see StrictVersionRequirement
+ * @property type The [RequirementType] that the instance implements
+ *
+ * @see SimpleVersionRequirement
  * @see MavenVersionRequirement
  */
 abstract class VersionRequirement protected constructor(requirement: String,
@@ -26,19 +28,22 @@ abstract class VersionRequirement protected constructor(requirement: String,
      */
     companion object {
         /**
-         * Parses the [VersionRequirement] as defined by the given [RequirementType]. Defaults to [RequirementType.STRICT]
+         * Parses the [VersionRequirement] as defined by the given [RequirementType]. Defaults to [RequirementType.SIMPLE]
          * @param versionRequirement The string representation of the requirement
          * @param requirementType The specific implementation to use
          * @return The parsed [VersionRequirement]
          */
-        @JvmStatic @JvmOverloads fun fromString(versionRequirement: String, requirementType: RequirementType = RequirementType.STRICT): VersionRequirement {
+        @JvmStatic @JvmOverloads fun fromString(versionRequirement: String, requirementType: RequirementType = RequirementType.SIMPLE): VersionRequirement {
             return when (requirementType) {
-                RequirementType.STRICT -> StrictVersionRequirement(versionRequirement)
+                RequirementType.SIMPLE -> SimpleVersionRequirement(versionRequirement)
                 RequirementType.MAVEN -> MavenVersionRequirement(versionRequirement)
             }
         }
     }
 
+    /**
+     * @suppress
+     */
     protected abstract fun calculate(rawRequirement: String): Array<VersionRange>
 
     /**
@@ -71,7 +76,7 @@ abstract class VersionRequirement protected constructor(requirement: String,
     operator fun get(index: Int) = validRanges[index]
 
     /**
-     * The number of individual [VersionRange](Version Ranges) that satisfy this requirement
+     * The number of individual [VersionRange] instances that satisfy this requirement
      */
     fun size() = validRanges.size
 
@@ -80,4 +85,7 @@ abstract class VersionRequirement protected constructor(requirement: String,
     }
 }
 
+/**
+ * @suppress
+ */
 open class InvalidRequirementFormatException(message: String): RuntimeException(message)

@@ -4,12 +4,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class StrictVersionRequirementTest {
+class SimpleVersionRequirementTest {
 
     @Test
     fun `Should include and exclude versions appropriately`() {
-        val requirements = arrayOf(StrictVersionRequirement("1.0.0-2.0.0"),
-                StrictVersionRequirement("  1.0.0  -2.0.0 "))
+        val requirements = arrayOf(SimpleVersionRequirement("1.0.0-2.0.0"),
+                SimpleVersionRequirement("  1.0.0  -2.0.0 "))
 
         val inside = arrayOf(
                 "1.0.0",

@@ -1,11 +1,21 @@
 package com.navelplace.jsemver
 
+/**
+ * [VersionRequirement] implementation based on Maven's version range specification
+ * at https://maven.apache.org/enforcer/enforcer-rules/versionRanges.html
+ *
+ * @constructor Parses [rawRequirement] into an instance of [MavenVersionRequirement]
+ */
 class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRequirement, RequirementType.MAVEN) {
+
+    /**
+     * @suppress
+     */
     companion object {
 
         // Any comma preceded by a ] or ) is the delimiter for:
         // [1.1,2.2],[3.3,4.4),(5.5,6.6.6],(7.7,8.8)
-        val VERSION_GROUPS_REGEX = """
+        private val VERSION_GROUPS_REGEX = """
         (?<=[\]\)])\s*\,
         """.trim().toRegex()
 
@@ -35,12 +45,13 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
             ($version)?\s*\,\s*($version)?
             """.trim()
 
+
         // [1.1,2.2],[3.3,4.4),(5.5,6.6],(7.7,8.8)
-        val VERSION_REQUIREMENT_REGEX = """
+        internal val VERSION_REQUIREMENT_REGEX = """
         ($open)\s*($versions)\s*($close)
         """.trim().toRegex()
 
-        val SINGLE_VERSION_REQUIREMENT_REGEX = """
+        private val SINGLE_VERSION_REQUIREMENT_REGEX = """
             $open\s*($version)\s*$close
             """.trim().toRegex()
 
@@ -55,6 +66,9 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
         }
     }
 
+    /**
+     * @suppress
+     */
     override fun calculate(rawRequirement: String): Array<VersionRange> {
         val elements: List<String> = rawRequirement.trim().split(VERSION_GROUPS_REGEX)
         return elements.map {
@@ -86,4 +100,7 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
     }
 }
 
+/**
+ * A string not conforming to the specification was used
+ */
 class InvalidMavenVersionRequirementFormatException(format: String): InvalidRequirementFormatException("Invalid format for MavenVersionRequirement: $format")
