@@ -3,7 +3,7 @@
 
     <groupId>com.navelplace</groupId>
     <artifactId>jsemver</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+    <version>0.1.2</version>
     <packaging>jar</packaging>
 
     <name>JSemver</name>
@@ -30,7 +30,7 @@
         <connection>scm:git:git@github.com:BrianDeacon/jsemver.git</connection>
         <developerConnection>scm:git:git@github.com:BrianDeacon/jsemver.git</developerConnection>
         <url>https://github.com/BrianDeacon/jsemver/tree/master</url>
-      <tag>HEAD</tag>
+      <tag>v0.1.2</tag>
   </scm>
 
     <distributionManagement>
