@@ -1,11 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.navelplace</groupId>
     <artifactId>jsemver</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>JSemver</name>
@@ -32,15 +30,16 @@
         <connection>scm:git:git@github.com:BrianDeacon/jsemver.git</connection>
         <developerConnection>scm:git:git@github.com:BrianDeacon/jsemver.git</developerConnection>
         <url>https://github.com/BrianDeacon/jsemver/tree/master</url>
-    </scm>
+      <tag>HEAD</tag>
+  </scm>
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
+            <id>ossrh-staging</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>ossrh</id>
+            <id>ossrh-release</id>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
@@ -96,7 +95,7 @@
                 <version>${nexus.staging.maven.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>ossrh</serverId>
+                    <serverId>ossrh-release</serverId>
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
