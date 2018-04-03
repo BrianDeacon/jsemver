@@ -29,8 +29,8 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/BrianDeacon/jsemver.git</connection>
-        <developerConnection>scm:git:git://github.com/BrianDeacon/jsemver.git</developerConnection>
+        <connection>scm:git:ssh://github.com/BrianDeacon/jsemver.git</connection>
+        <developerConnection>scm:git:ssh://github.com/BrianDeacon/jsemver.git</developerConnection>
         <url>https://github.com/BrianDeacon/jsemver/tree/master</url>
     </scm>
 
