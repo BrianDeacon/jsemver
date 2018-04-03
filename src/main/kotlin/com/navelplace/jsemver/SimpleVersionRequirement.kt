@@ -24,6 +24,6 @@ class SimpleVersionRequirement(versionRequirement: String): VersionRequirement(v
 }
 
 /**
- * A string not conforming to the specification was used
+ * @suppress
  */
 class InvalidSimpleRequirementFormatException(format: String): InvalidRequirementFormatException("Invalid format for SIMPLE requirement: $format")

@@ -21,7 +21,7 @@ class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: 
     fun contains(version: Version): Boolean {
         if (minInclusive && version.equivalentTo(min)) return true
         if (maxInclusive && version.equivalentTo(max)) return true
-        return version.greaterThan(min) && version.lessThan(max)
+        return version.newerThan(min) && version.olderThan(max)
     }
 
     override fun equals(other: Any?): Boolean {

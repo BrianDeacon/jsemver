@@ -116,20 +116,22 @@ class Version : Comparable<Version> {
     }
 
     /**
-     * Tests if another [Version] is greater
+     * Tests if another [Version] is newer
      * @param other The other [Version] to be compared
      * @return True if [other] is semantically newer.
      */
-    fun greaterThan(other: Version): Boolean {
+    @JvmName("isNewerThan")
+    fun newerThan(other: Version): Boolean {
         return compareTo(other) > 0
     }
 
     /**
-     * Tests if another [Version] is greater
+     * Tests if another [Version] is older
      * @param other The other [Version] to be compared
      * @return True if [other] is semantically older.
      */
-    fun lessThan(other: Version): Boolean {
+    @JvmName("isOlderThan")
+    fun olderThan(other: Version): Boolean {
         return compareTo(other) < 0
     }
 
@@ -141,6 +143,7 @@ class Version : Comparable<Version> {
      * @param other The other [Version] to be compared
      * @return True if [other] is semantically equivalent.
      */
+    @JvmName("isEquivalentTo")
     fun equivalentTo(other: Version): Boolean {
         return compareTo(other) == 0
     }
@@ -249,8 +252,6 @@ class Version : Comparable<Version> {
 }
 
 /**
- * Indicates a requested version format was invalid.
- *
- * @property format The invalid string
+ * @suppress
  */
 class InvalidVersionFormatException(val format: String): RuntimeException("Invalid version format: $format")

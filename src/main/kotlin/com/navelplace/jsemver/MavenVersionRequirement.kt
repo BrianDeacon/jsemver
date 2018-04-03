@@ -101,6 +101,6 @@ class MavenVersionRequirement(rawRequirement: String) : VersionRequirement(rawRe
 }
 
 /**
- * A string not conforming to the specification was used
+ * @suppress
  */
 class InvalidMavenVersionRequirementFormatException(format: String): InvalidRequirementFormatException("Invalid format for MavenVersionRequirement: $format")
