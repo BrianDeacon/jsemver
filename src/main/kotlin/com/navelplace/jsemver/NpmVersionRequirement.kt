@@ -2,8 +2,11 @@ package com.navelplace.jsemver
 
 import com.navelplace.jsemver.antlr.NPMLexer
 import com.navelplace.jsemver.antlr.NPMParser
+import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.RecognitionException
+import org.antlr.v4.runtime.Recognizer
 
 
 enum class Operator {
@@ -60,13 +63,13 @@ abstract class Santa : Claus {
     protected open fun minFor(versionContext: NPMParser.VersionContext): Version {
         val preRelease = versionContext.preRelease()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
         val build = versionContext.build()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
-        return NpmVersionRequirement.minFor(versionContext.major().text, versionContext.minor().text, versionContext.patch().text, preRelease, build)
+        return NpmVersionRequirement.minFor(versionContext.major().text, versionContext.minor()?.text, versionContext.patch()?.text, preRelease, build)
     }
 
     protected open fun maxFor(versionContext: NPMParser.VersionContext): Version {
         val preRelease = versionContext.preRelease()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
         val build = versionContext.build()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
-        return NpmVersionRequirement.maxFor(versionContext.major().text, versionContext.minor().text, versionContext.patch().text, preRelease, build)
+        return NpmVersionRequirement.maxFor(versionContext.major().text, versionContext.minor()?.text, versionContext.patch()?.text, preRelease, build)
     }
 
     override fun isSatisfiedBy(version: Version): Boolean {
@@ -112,7 +115,7 @@ class TildeClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
 
 class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = Version.MIN_VERSION, max=minFor(versionContext), minInclusive = true, maxInclusive = true)
+        return VersionRange(min = minFor(versionContext), max=maxFor(versionContext), minInclusive = true, maxInclusive = false)
     }
 
     override fun isSatisfiedBy(otherVersion: Version) =
@@ -127,9 +130,9 @@ class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
             Note that prereleases in the 0.0.3 version only will be allowed, if they are greater than or equal to beta.
             So, 0.0.3-pr.2 would be allowed.
             */
-            otherVersion.major == range.max.major &&
-            otherVersion.minor == range.max.minor &&
-            otherVersion.patch == range.max.patch &&
+            otherVersion.major == range.min.major &&
+            otherVersion.minor == range.min.minor &&
+            otherVersion.patch == range.min.patch &&
             range.contains(otherVersion)
 
         } else {
@@ -142,9 +145,14 @@ class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
         val patchWildcard = NpmVersionRequirement.isWildcard(versionContext.patch()?.text)
         var minor = if (minorWildcard) 0 else versionContext.minor()!!.text.toInt()
         var patch = if (patchWildcard) 0 else versionContext.patch()!!.text.toInt()
-        if (major + minor + patch == 0) {
+        if (major + minor + patch == 0 && minorWildcard) {
             // ^0.x := >=0.0.0 <1.0.0
             major = 1
+        } else if (major + minor + patch == 0 &&  patchWildcard && !minorWildcard) {
+            // ^0.0.x := >=0.0.0 <0.1.0
+            // ^0.0 := >=0.0.0 <0.1.0
+            patch = 0
+            minor = 1
         } else if (major > 0) {
             // ^1.2.x := >=1.2.0 <2.0.0
             // ^1.2.3 := >=1.2.3 <2.0.0
@@ -154,18 +162,13 @@ class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
             major += 1
             minor = 0
             patch = 0
+        } else if (major == 0 && minor == 0 && !patchWildcard && !minorWildcard) {
+            // ^0.0.3 := >=0.0.3 <0.0.4
+            patch += 1 // This has effectively become an equals clause
         } else if (major == 0 && !patchWildcard && !minorWildcard) {
             // ^0.2.3 := >=0.2.3 <0.3.0
             minor += 1
             patch = 0
-        } else if (major == 0 && minor == 0 && !minorWildcard) {
-            // ^0.0.3 := >=0.0.3 <0.0.4
-            patch += 1
-        } else if (major == 0 && minor == 0 && patchWildcard) {
-            // ^0.0.x := >=0.0.0 <0.1.0
-            // ^0.0 := >=0.0.0 <0.1.0
-            patch = 0
-            minor = 1
         } else  if (major == 0 && minor == 0 && patch > 0) {
             // ^0.0.3 := >=0.0.3 <0.0.4
             patch += 1
@@ -282,11 +285,14 @@ class NpmVersionRequirement : VersionRequirement {
     constructor(rawRequirement: String): super(rawRequirement, RequirementType.NPM) {
         val lexer = NPMLexer(CharStreams.fromString(rawRequirement))
         val parser = NPMParser(CommonTokenStream(lexer))
-        val listener = ThrowingErrorListener(rawRequirement)
+        val listener = ThrowingRequirementErrorListener(rawRequirement)
         lexer.addErrorListener(listener)
         parser.addErrorListener(listener)
 
         val intersections = parser.union().intersection()
+        val size = intersections.size
+        val size2 = intersections[0].operatorClause().size
+        val op = intersections[0].operatorClause()[0]
         this.orClaus = OrClaus(intersections.map { intersection ->
             val operatorClauses = intersection.operatorClause().map { Santa.clauseFor(it) }
             val dashClauses = intersection.dashClause().map { DashClaus(it) }
@@ -302,4 +308,13 @@ class NpmVersionRequirement : VersionRequirement {
 
 
 
+}
+
+/**
+ * @suppress
+ */
+class ThrowingRequirementErrorListener(val input: String) : BaseErrorListener() {
+    override fun syntaxError(recognizer: Recognizer<*, *>, offendingSymbol: Any?, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException?) {
+        throw InvalidRequirementFormatException(input)
+    }
 }

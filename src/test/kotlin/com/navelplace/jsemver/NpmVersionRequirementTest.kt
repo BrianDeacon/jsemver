@@ -60,4 +60,80 @@ class NpmVersionRequirementTest {
         assertFalse { requirement.isSatisfiedBy("1.2.3") }
 
     }
+
+
+
+    @Test
+    fun `caret ranges`() {
+        val satisfies = mapOf(
+                "^1.2.3" to arrayOf("1.2.3", "1.2.4", "1.9.9"),
+                "^1.2.x" to arrayOf("1.2.0", "1.9.9", "1.2.1"),
+                "^2.3.4" to arrayOf("2.3.4", "2.9.9", "2.4.4", "2.3.5"),
+                "^1.2.3-beta.2" to arrayOf("1.2.3-beta.2", "1.2.3-beta.3", "1.9.9", "1.2.3", "1.2.4"),
+                "^1.x" to arrayOf("1.0.0", "1.9.9", "1.1.0", "1.0.1", "1.1.1"),
+                "^0.2.3" to arrayOf("0.2.3"),
+                "^0.0.3" to arrayOf("0.0.3"),
+                "^0.0.x" to arrayOf("0.0.0", "0.0.9"),
+                "^0.0" to arrayOf("0.0.0", "0.0.1"),
+                "^0.x" to arrayOf("0.0.0", "0.9.9", "0.1.0" )
+        )
+
+        val doesNotSatisfy = mapOf(
+                "^1.2.3" to arrayOf("1.2.2", "2.0.0", "0.9.9", "2.0.1", "1.2.3-alpha", "1.2.3-alpha+build", "1.2.4-alpha"),
+                "^1.2.x" to arrayOf("1.1.9", "2.0.0", "1.2.0-alpha", "1.2.0-alpha+build", "1.2.1-alpha"),
+                "^2.3.4" to arrayOf("2.3.3", "3.0.0", "3.0.1", "3.0.0-alpha", "3.0.0-alpha+build", "2.3.5-alpha"),
+                "^1.2.3-beta.2" to arrayOf("1.2.2", "1.2.4-beta.5", "1.2.3-alpha", "1.2.3-alpha.5", "1.2.5-x", "2.0.0-alpha"),
+                "^1.x" to arrayOf("0.9.9", "2.0.0", "2.0.0-alpha", "2.0.0-alpha+build", "1.0.0-alpha", "1.0.0-alpha+build", "1.0.1-alpha"),
+                "^0.2.3" to arrayOf("0.3.0", "1.0.0", "0.2.2", "0.2.3-alpha", "0.2.3-alpha+build", "0.2.4-alpha"),
+                "^0.0.3" to arrayOf("0.0.2", "0.0.3-alpha", "1.0.0", "0.1.0", "0.0.3-alpha", "0.0.3-alpha+build", "0.0.4-alpha", "0.0.4"),
+                "^0.0.x" to arrayOf("0.1.0", "0.0.1-alpha", "0.0.0-alpha+build"),
+                "^0.0" to arrayOf("0.0.0-alpha", "0.0.0-alpha+build", "0.1.0", "0.1.0-alpha", "0.1.0-alpha.build"),
+                "^0.x" to arrayOf("1.0.0", "1.0.0-alpha", "0.0.0-alpha", "0.0.0-alpha+build")
+        )
+
+        Version("1.2.3").satisfies(NpmVersionRequirement("^1.2.3"))
+        satisfies.forEach { requirement, versions ->
+            versions.forEach {version ->
+                assertTrue ("$version should satisfy $requirement",
+                        { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+
+            }
+        }
+
+        doesNotSatisfy.forEach { requirement, versions ->
+            versions.forEach {version ->
+                assertFalse ("$version should not satisfy $requirement",
+                        { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+
+            }
+        }
+    }
+
+    @Test
+    fun `preRelease still disqualifies a caret upper bound`() {
+        val version3 = "3.0.0"
+        val version2 = "2.9.9"
+        val alpha = "3.0.0-alpha"
+        val req = NpmVersionRequirement("^2.3.4")
+        assertTrue { Version(version2).satisfies(req) }
+        assertFalse { Version(version3).satisfies(req) }
+        assertFalse { Version(alpha).satisfies(req) }
+    }
+
+    @Test
+    fun `Caret rules should handle prerelease requirements`() {
+        val version = Version("1.2.3-beta.2")
+        val requirement = NpmVersionRequirement("^1.2.3-beta.2")
+        assertTrue(version.satisfies(requirement))
+    }
+
+    @Test
+    fun `v0_0_4 should not satisfy caret0_0_3`() {
+        assertFalse(Version("0.0.4").satisfies(NpmVersionRequirement("^0.0.3")))
+    }
+
+    @Test
+    fun `v0_1_0 should not satisfy caret0_0_x`() {
+        assertFalse(Version("0.1.0").satisfies(NpmVersionRequirement("^0.0.x")))
+    }
 }

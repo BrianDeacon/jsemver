@@ -29,7 +29,7 @@ preRelease: dottedLegal;
 build: dottedLegal;
 
 dottedLegal: legalCharacters (DOT legalCharacters)* ;
-legalCharacters: (WITHOUT_V | v | DASH | x)+ ;
+legalCharacters: (WITHOUT_V | v | DASH | x | VERSION_ELEMENT)+ ;
 x: X ;
 
 operator
