@@ -170,16 +170,6 @@ class NpmVersionRequirementTest {
         assertEquals(version.major().text, "2")
         assertEquals(version.minor().text, "0")
         assertEquals(version.patch().text, "0")
-
-
-//        assertNotNull(parser)
-//        assertNotNull(parser?.version())
-//        assertNotNull(parser?.version()?.major())
-//        assertNotNull(parser?.version()?.minor())
-//        assertNotNull(parser?.version()?.patch())
-//        assertNotNull(parser?.version()?.major()?.text)
-//        assertNotNull(parser?.version()?.minor()?.text)
-//        assertNotNull(parser?.version()?.patch()?.text)
     }
 
     @Test
@@ -232,4 +222,75 @@ class NpmVersionRequirementTest {
             }
         }
     }
+
+    @Test
+    fun `version 1_2_3 and requirement ~1_2_3-beta_2` () {
+        val version = "1.2.3"
+        val requirement = "~1.2.3-beta.2"
+        assertTrue ("$version should satisfy $requirement",
+                { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+    }
+
+    @Test
+    fun `tilde ranges` () {
+        /*
+        ~1.2.3 := >=1.2.3 <1.(2+1).0 := >=1.2.3 <1.3.0
+~1.2 := >=1.2.0 <1.(2+1).0 := >=1.2.0 <1.3.0 (Same as 1.2.x)
+~1 := >=1.0.0 <(1+1).0.0 := >=1.0.0 <2.0.0 (Same as 1.x)
+~0.2.3 := >=0.2.3 <0.(2+1).0 := >=0.2.3 <0.3.0
+~0.2 := >=0.2.0 <0.(2+1).0 := >=0.2.0 <0.3.0 (Same as 0.2.x)
+~0 := >=0.0.0 <(0+1).0.0 := >=0.0.0 <1.0.0 (Same as 0.x)
+~1.2.3-beta.2 := >=1.2.3-beta.2 <1.3.0
+         */
+        val satisfies = mapOf(
+                "~1.2.3" to arrayOf("1.2.3", "1.2.5"),
+                "~1.2" to arrayOf("1.2.0", "1.2.1", "1.2.99"),
+                "~1" to arrayOf("1.0.0", "1.1.0", "1.0.1", "1.9.9"),
+                "~0.2.3" to arrayOf("0.2.3", "0.2.9"),
+                "~0.2" to arrayOf("0.2.0", "0.2.9"),
+                "~0" to arrayOf("0.0.0", "0.9.0", "0.0.9", "0.9.9"),
+                "~1.2.3-beta.2" to arrayOf("1.2.3-beta.2", "1.2.3", "1.2.9", "1.2.3-beta.3", "1.2.3-gamma", "1.2.3-beta.2+build", "1.2.3-beta.3+build")
+        )
+
+        val doesNotSatisfy = mapOf(
+                "~1.2.3" to arrayOf("1.2.2", "1.3.0", "1.2.2-beta", "1.2.2-beta+build", "0.0.0", "1.3.0-beta"),
+                "~1.2" to arrayOf("1.1.9", "1.3.0", "1.2.0-beta", "1.2.0-beta+build", "1.3.0-beta"),
+                "~1" to arrayOf("0.9.9", "1.0.0-beta", "2.0.0", "2.0.0-alpha"),
+                "~0.2.3" to arrayOf("0.3.0", "0.2.2", "0.2.3-alpha", "0.2.3-alpha+build", "0.3.0-alpha"),
+                "~0.2" to arrayOf("0.1.9", "0.2.0-alpha", "0.2.0-alpha+build", "0.3.0", "0.3.0-alpha", "0.3.0-alpha+build"),
+                "~0" to arrayOf("0.0.0-alpha", "0.0.0-alpha+build", "1.0.0", "1.0.0-alpha", "1.0.0-alpha+build"),
+                "~1.2.3-beta.2" to arrayOf("1.2.3-beta.1", "1.2.2", "1.2.4-gamma", "1.3.0", "1.3.0-beta.6", "1.3.1")
+        )
+
+        satisfies.forEach { requirement, versions ->
+            versions.forEach {version ->
+                try {
+                    assertTrue ("$version should satisfy $requirement",
+                            { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+                } catch(e: AssertionError) {
+                    throw e
+                } catch (e: Exception) {
+                    throw RuntimeException("Problem with version $version and requirement $requirement", e)
+                }
+
+
+            }
+        }
+
+        doesNotSatisfy.forEach { requirement, versions ->
+            versions.forEach {version ->
+                try {
+                    assertFalse ("$version should not satisfy $requirement",
+                            { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+                } catch(e: AssertionError) {
+                    throw e
+                } catch (e: Exception) {
+                    throw RuntimeException("Problem with version $version and requirement $requirement", e)
+                }
+
+
+            }
+        }
+    }
+
 }

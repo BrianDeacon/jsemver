@@ -112,8 +112,43 @@ class LessThanEqualClause(context: NPMParser.OperatorClauseContext) : Santa(cont
 
 class TildeClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = Version.MIN_VERSION, max=minFor(versionContext), minInclusive = true, maxInclusive = true)
+        return VersionRange(min = minFor(versionContext), max=maxFor(versionContext), minInclusive = true, maxInclusive = false)
     }
+
+    override fun maxFor(versionContext: NPMParser.VersionContext): Version {
+        var major = versionContext.major().text.toInt()
+        val minorWildcard = NpmVersionRequirement.isWildcard(versionContext.minor()?.text)
+        val patchWildcard = NpmVersionRequirement.isWildcard(versionContext.patch()?.text)
+        var minor = if (minorWildcard) 0 else versionContext.minor()!!.text.toInt()
+        var patch = if (patchWildcard) 0 else versionContext.patch()!!.text.toInt()
+
+        when {
+            // ~0 := >=0.0.0 <(0+1).0.0 := >=0.0.0 <1.0.0 (Same as 0.x)
+            major == 0 && minorWildcard && patchWildcard -> { major += 1; minor = 0; patch = 0; }
+            //~0.2 := >=0.2.0 <0.(2+1).0 := >=0.2.0 <0.3.0 (Same as 0.2.x)
+            major == 0 && !minorWildcard && patchWildcard -> { major = major; minor += 1; patch = 0; }
+            //~1.2.3 := >=1.2.3 <1.(2+1).0 := >=1.2.3 <1.3.0
+            major > 0 && minor > 0 && patch > 0 -> { major = major; minor += 1; patch = 0 }
+            //~1.2 := >=1.2.0 <1.(2+1).0 := >=1.2.0 <1.3.0 (Same as 1.2.x)
+            major > 0 && minor > 0 && patchWildcard -> { major = major; minor += 1; patch = 0 }
+            //~1 := >=1.0.0 <(1+1).0.0 := >=1.0.0 <2.0.0 (Same as 1.x)
+            major > 0 && minorWildcard && patchWildcard -> { major += 1; minor = 0; patch = 0 }
+            //~0.2.3 := >=0.2.3 <0.(2+1).0 := >=0.2.3 <0.3.0
+            major == 0 && !minorWildcard && !patchWildcard -> { major = 0; minor += 1; patch = 0; }
+        }
+        return Version(major, minor, patch)
+    }
+
+    override fun isSatisfiedBy(otherVersion: Version) =
+            if (otherVersion.preRelease.isNotBlank()) {
+                otherVersion.major == range.min.major &&
+                        otherVersion.minor == range.min.minor &&
+                        otherVersion.patch == range.min.patch &&
+                        range.contains(otherVersion)
+
+            } else {
+                range.contains(otherVersion)
+            }
 }
 
 class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
@@ -148,34 +183,31 @@ class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
         val patchWildcard = NpmVersionRequirement.isWildcard(versionContext.patch()?.text)
         var minor = if (minorWildcard) 0 else versionContext.minor()!!.text.toInt()
         var patch = if (patchWildcard) 0 else versionContext.patch()!!.text.toInt()
-        if (major + minor + patch == 0 && minorWildcard) {
+        when {
             // ^0.x := >=0.0.0 <1.0.0
-            major = 1
-        } else if (major + minor + patch == 0 &&  patchWildcard && !minorWildcard) {
+            major + minor + patch == 0 && minorWildcard -> { major = 1; minor = 0; patch = 0; }
+
             // ^0.0.x := >=0.0.0 <0.1.0
             // ^0.0 := >=0.0.0 <0.1.0
-            patch = 0
-            minor = 1
-        } else if (major > 0) {
+            major + minor + patch == 0 &&  patchWildcard && !minorWildcard -> { major = major; minor += 1; patch = 0 }
+
             // ^1.2.x := >=1.2.0 <2.0.0
             // ^1.2.3 := >=1.2.3 <2.0.0
             // ^2.3.4 := >=2.3.4 <3.0.0
             // ^1.2.3-beta.2 := >=1.2.3-beta.2 <2.0.0
             // ^1.x := >=1.0.0 <2.0.0
-            major += 1
-            minor = 0
-            patch = 0
-        } else if (major == 0 && minor == 0 && !patchWildcard && !minorWildcard) {
+            major > 0 -> { major += 1; minor = 0; patch = 0; }
+
             // ^0.0.3 := >=0.0.3 <0.0.4
-            patch += 1 // This has effectively become an equals clause
-        } else if (major == 0 && !patchWildcard && !minorWildcard) {
+            major == 0 && minor == 0 && !patchWildcard && !minorWildcard -> { major = major; minor = minor; patch += 1; }
+
             // ^0.2.3 := >=0.2.3 <0.3.0
-            minor += 1
-            patch = 0
-        } else  if (major == 0 && minor == 0 && patch > 0) {
+            major == 0 && !patchWildcard && !minorWildcard -> { major = major; minor += 1; patch = 0; }
+
             // ^0.0.3 := >=0.0.3 <0.0.4
-            patch += 1
+            major == 0 && minor == 0 && patch > 0 -> { major = major; minor = minor; patch += 1; }
         }
+
         return Version(major, minor, patch)
     }
 }
