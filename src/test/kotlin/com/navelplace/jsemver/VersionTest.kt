@@ -114,4 +114,50 @@ class VersionTest {
         reversed.sort()
         assertArrayEquals(inOrder, reversed)
     }
+
+    @Test
+    fun `Can parse a simple semver`() {
+        val v = Version.fromString("1.2.3")
+        assertEquals(1, v.major)
+        assertEquals(2, v.minor)
+        assertEquals(3, v.patch)
+    }
+
+    @Test(expected = InvalidVersionFormatException::class)
+    fun `Can reject a bad semver`() {
+        Version.fromString("01.2.3")
+    }
+
+    @Test(expected = InvalidVersionFormatException::class)
+    fun `Can reject a bad prerelease`() {
+        Version.fromString("1.2.3-^^^")
+    }
+
+    @Test
+    fun `Can parse the prerelease`() {
+        assertEquals("SNAPSHOT", Version.fromString("1.2.3-SNAPSHOT").preRelease)
+    }
+
+    @Test
+    fun `Can parse the build`() {
+        assertEquals("123", Version.fromString("1.2.3-SNAPSHOT+123").metadata)
+    }
+
+    @Test
+    fun `Can handle dashes in the prerelease and metadata`() {
+        val version = Version.fromString("1.2.3-abc-def+ghi-jkl")
+        assertEquals("abc-def", version.preRelease)
+        assertEquals("ghi-jkl", version.metadata)
+        assertEquals("ghi-jkl", version.metadataElements[0])
+        assertEquals("abc-def", version.preReleaseElements[0])
+        assertEquals(1, version.preReleaseElements.size)
+        assertEquals(1, version.metadataElements.size)
+    }
+
+    @Test
+    fun `Can parse the elements within a prerelease and build`() {
+        val version = Version.fromString("1.2.3-a.b.c+d.e.f")
+        "a.b.c".split(".").forEachIndexed{i, it -> assertEquals(it, version.preReleaseElements[i]) }
+        "d.e.f".split(".").forEachIndexed{i, it ->  assertEquals(it, version.metadataElements[i]) }
+    }
 }

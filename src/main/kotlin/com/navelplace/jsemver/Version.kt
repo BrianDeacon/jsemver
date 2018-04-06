@@ -1,6 +1,13 @@
 package com.navelplace.jsemver
 
 import com.navelplace.jsemver.RequirementType.*
+import com.navelplace.jsemver.antlr.VersionLexer
+import com.navelplace.jsemver.antlr.VersionParser as AntlrParser
+import org.antlr.v4.runtime.BaseErrorListener
+import org.antlr.v4.runtime.CharStreams
+import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.RecognitionException
+import org.antlr.v4.runtime.Recognizer
 
 /**
  * Represents a semver pattern `major.minor.patch[-preRelease[+metadata]]`
@@ -21,19 +28,13 @@ class Version : Comparable<Version> {
     val patch: Int
     val preRelease: String
     val metadata: String
+    val preReleaseElements: Array<String>
+    val metadataElements: Array<String>
 
     /**
      * @suppress
      */
     companion object {
-        private val SEMVER_REGEX = Regex("""
-        ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-((0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$
-        """.trim())
-
-        private fun makeMatch(version: String): MatchResult? {
-            return SEMVER_REGEX.find(version)
-        }
-
         /**
          * No [Version] is greater than [MAX_VERSION]
          */
@@ -50,7 +51,13 @@ class Version : Comparable<Version> {
          * @return True if the version string is correctly formatted
          */
         @JvmStatic fun isValid(version: String): Boolean {
-            return makeMatch(version) != null
+            try {
+                Version.fromString(version)
+                return true
+            }
+            catch(e: InvalidVersionFormatException) {
+                return false
+            }
         }
 
         /**
@@ -60,6 +67,12 @@ class Version : Comparable<Version> {
          * @throws [InvalidVersionFormatException]
          */
         @JvmStatic fun fromString(version: String) = Version(version)
+
+        private fun escape(value: String): String {
+            val elements = value.split("-")
+            if (elements.size == 1) return value
+            return elements[0] + "&" + elements.subList(1, elements.size).joinToString("-")
+        }
     }
 
     /**
@@ -68,23 +81,53 @@ class Version : Comparable<Version> {
      */
     constructor(version: String) {
         raw = version.trim()
-        val match = makeMatch(raw) ?: throw InvalidVersionFormatException(version)
-        major = match.groups[1]!!.value.toInt()
-        minor = match.groups[2]!!.value.toInt()
-        patch = match.groups[3]!!.value.toInt()
-        preRelease = match.groups[5]?.value?: ""
-        metadata = match.groups[10]?.value?: ""
+
+        /*
+          Brutal Hack(tm):
+          1.0.0-has-dashes+build-number is valid
+          It's remarkably hard to make ANTLR aware of the first dash without all the other
+          ones making it mad. So we just make that first dash a special character:
+          1.0.0&has-dashes+build-number
+          The ANTLR grammar is looking for the '&' where you'd think a dash would be.
+          A developer of stronger moral fiber would figure out how to get ANTLR to do it.
+        */
+        val escaped = escape(raw)
+        val lexer = VersionLexer(CharStreams.fromString(escaped))
+        val parser = AntlrParser(CommonTokenStream(lexer))
+
+        val listener = ThrowingErrorListener(raw)
+        lexer.addErrorListener(listener)
+        parser.addErrorListener(listener)
+
+        val fullVersion = parser.fullVersion()
+        val semver = fullVersion.semver()
+
+        val prereleaseElement = fullVersion?.prerelease()?.prereleaseElement()?: emptyList()
+        this.preReleaseElements = prereleaseElement.map { it.text }.toTypedArray()
+        val build = fullVersion?.build()?.buildElement()?: emptyList()
+        this.metadataElements = build.map { it.text }.toTypedArray()
+
+        this.preRelease = preReleaseElements.joinToString(".")
+        this.metadata = metadataElements.joinToString(".")
+
+        this.major = semver.major.text.toInt()
+        this.minor = semver.minor.text.toInt()
+        this.patch = semver.patch.text.toInt()
+
     }
 
-    private constructor(major: Int, minor: Int, patch: Int, prerelease: String = "", build: String = "") {
-        val buildString = if (build.isNotEmpty()) "+$build" else ""
-        val tail = if(prerelease.isNotEmpty()) "-$prerelease$buildString" else ""
-        raw = "$major.$minor.$patch$tail"
+
+    constructor(major: Int, minor: Int, patch: Int, prerelease: Array<String> = emptyArray(), build: Array<String> = emptyArray()) {
         this.major = major
         this.minor = minor
         this.patch = patch
-        this.preRelease = prerelease
-        this.metadata = build
+        this.preReleaseElements = prerelease
+        this.metadataElements = build
+        this.preRelease = prerelease.joinToString(".")
+        this.metadata = build.joinToString(".")
+        val buildString = if (metadata.isNotEmpty()) "+$metadata" else ""
+        val tail = if(preRelease.isNotEmpty()) "-$preRelease$buildString" else ""
+        this.raw = "$major.$minor.$patch$tail"
     }
 
     /**
@@ -210,18 +253,16 @@ class Version : Comparable<Version> {
         identifiers are equal.
         Example: 1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0.
          */
-        val myItems = preRelease.split(".")
-        val otherItems = other.preRelease.split(".")
 
         //If one array is longer, we initially disregard the extra elements
-        for (i in 0..Math.min(myItems.size - 1, otherItems.size - 1)) {
-            compare = elementCompare(myItems[i], otherItems[i])
+        for (i in 0..Math.min(preReleaseElements.size - 1, other.preReleaseElements.size - 1)) {
+            compare = elementCompare(preReleaseElements[i], other.preReleaseElements[i])
             if (compare != 0) return compare
         }
 
         // If we got here, the versions are identical except that one preRelease may be longer than the other
         // The shorter one comes first, so just compare the number of elements in preRelease
-        return myItems.size.compareTo(otherItems.size)
+        return preReleaseElements.size.compareTo(other.preReleaseElements.size)
     }
 
     private fun elementCompare(one: String, two: String): Int {
@@ -255,3 +296,12 @@ class Version : Comparable<Version> {
  * @suppress
  */
 class InvalidVersionFormatException(val format: String): RuntimeException("Invalid version format: $format")
+
+/**
+ * @suppress
+ */
+class ThrowingErrorListener(val input: String) : BaseErrorListener() {
+    override fun syntaxError(recognizer: Recognizer<*, *>, offendingSymbol: Any?, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException?) {
+        throw InvalidVersionFormatException(input)
+    }
+}

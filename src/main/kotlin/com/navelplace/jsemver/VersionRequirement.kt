@@ -5,7 +5,8 @@ package com.navelplace.jsemver
  */
 enum class RequirementType {
     SIMPLE,
-    MAVEN
+    MAVEN,
+    NPM
 }
 
 /**
@@ -37,6 +38,7 @@ abstract class VersionRequirement protected constructor(requirement: String,
             return when (requirementType) {
                 RequirementType.SIMPLE -> SimpleVersionRequirement(versionRequirement)
                 RequirementType.MAVEN -> MavenVersionRequirement(versionRequirement)
+                RequirementType.NPM -> NpmVersionRequirement(versionRequirement)
             }
         }
     }
