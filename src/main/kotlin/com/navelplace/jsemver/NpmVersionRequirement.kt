@@ -39,8 +39,11 @@ interface Claus {
 abstract class Santa : Claus {
 
     companion object {
-        fun clauseFor(context: NPMParser.OperatorClauseContext) : Claus{
+        fun clauseFor(context: NPMParser.OperatorClauseContext, rawRequirement: String) : Claus{
             val operator = Operator.forString(context.operator()?.text?.toUpperCase())
+            if (DashClaus.isFalseOperator(context, rawRequirement)) {
+                return DashClaus(context)
+            }
             return when(operator) {
                 null, Operator.EQ -> EqualClause(context)
                 Operator.TILDE -> TildeClause(context)
@@ -179,23 +182,96 @@ class CaretClause(context: NPMParser.OperatorClauseContext) : Santa(context) {
 
 
 class DashClaus : Claus {
+
+    companion object {
+        private val FALSE_VERSION_MATCHER = """
+
+                """.trim().toRegex()
+
+        private fun hasThisRange(minMajor: String,
+                                 minMinor: String,
+                                 minPatch: String,
+                                 preRelease: String,
+                                 rawRequirement: String): Boolean {
+            // There was a 1.2.3-4.5.6, which is technically valid if there was no whitespace around the dash.
+            // If there is whitespace, we'll treat it as a DashClause
+
+            val escaped = preRelease.replace(".", "\\.")
+            val regex = "$minMajor\\.$minMinor\\.$minPatch((\\s+[-]\\s+)|(\\s+[-])|([-]\\s+))$escaped"
+            return regex.toRegex().matches(rawRequirement)
+        }
+
+        fun isFalseOperator(context: NPMParser.OperatorClauseContext, rawRequirement: String): Boolean {
+            /*
+             Psychotic semver values that are still valid:
+             1.1.1-2.2.2 (Prerelease is "2.2.2" which looks like a version)
+             1.1.1-2.2.2-SNAPSHOT+build (Prerelease is "2.2.2-SNAPSHOT" because dashes are allowed in the prerelease)
+
+             If the  prerelease looks like a version, AND there is whitespace
+             in the raw version that would render the semver invalid, we force it into a DashClaus
+             i.e. "1.1.1-2.2.2" is a version with a prerelease. "1.1.1 - 2.2.2" is a DashClause
+             Ideally, the ANTLR parser would be able to distinguish "1.1.1 - 2.2.2" from
+             "1.1.1-2.2.2"
+             This smells like a bug, but it's a compatible bug to npm semver.
+            */
+            val version = context.version()
+            return version.build() == null &&
+                    NpmVersionRequirement.isValidPartialVersion(version.preRelease()?.text) &&
+                    hasThisRange(version.major().text, version.minor().text, version.patch().text, version.preRelease().text, rawRequirement)
+
+
+        }
+    }
     val versionRange: VersionRange
 
     constructor(context: NPMParser.DashClauseContext) {
         val min = context.version(0)
         val max = context.version(1)
 
-        val preReleaseMin = min.preRelease().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
-        val preReleaseMax = max.preRelease().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
-        val buildMin = min.build().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
-        val buildMax = max.build().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
+        var legalMinChars = min.preRelease()?.dottedLegal()?.legalCharacters()
+        var legalMaxChars = max.preRelease()?.dottedLegal()?.legalCharacters()
+        val preReleaseMin = if (legalMinChars != null) legalMinChars.map { it.text }.toTypedArray() else emptyArray()
+        val preReleaseMax = if (legalMaxChars != null) legalMaxChars.map { it.text }.toTypedArray() else emptyArray()
 
-        val minVersion = NpmVersionRequirement.minFor(min.major().text, min.minor().text, min.patch().text,preReleaseMin, buildMin)
-        val maxVersion = NpmVersionRequirement.maxFor(max.major().text, min.minor().text, min.patch().text, preReleaseMax, buildMax)
+        legalMinChars = min.build()?.dottedLegal()?.legalCharacters()
+        legalMaxChars = max.build()?.dottedLegal()?.legalCharacters()
+        val buildMin = if (legalMinChars != null) legalMinChars.map { it.text }.toTypedArray() else emptyArray()
+        val buildMax = if (legalMaxChars != null) legalMaxChars.map { it.text }.toTypedArray() else emptyArray()
+
+        val minVersion = NpmVersionRequirement.minFor(min.major().text, min.minor()?.text, min.patch()?.text,preReleaseMin, buildMin)
+        val maxVersion = NpmVersionRequirement.maxFor(max.major().text, min.minor()?.text, min.patch()?.text, preReleaseMax, buildMax)
         this.versionRange = VersionRange(min = minVersion, max = maxVersion)
     }
 
-    override fun isSatisfiedBy(version: Version) = versionRange.contains(version)
+    constructor(context: NPMParser.OperatorClauseContext) {
+        val minMajor = context.version().major().text.toInt()
+        val minMinorString = context.version().minor()?.text
+        val minPatchString = context.version().patch()?.text
+        val minMinor = if (NpmVersionRequirement.isWildcard(minMinorString)) 0 else minMinorString!!.toInt()
+        val minPatch = if (NpmVersionRequirement.isWildcard(minPatchString)) 0 else minPatchString!!.toInt()
+        val minVersion = Version(minMajor, minMinor, minPatch)
+
+        val parser = NpmVersionRequirement.parserFor(context.version().preRelease()!!.text)
+        val version = parser.version()
+        val maxMajorString = version.major().text
+        val maxMinorString = version.minor()?.text
+        val maxPatchString = version.patch()?.text
+
+        val maxMajor = maxMajorString.toInt()
+        val maxMinor = if (NpmVersionRequirement.isWildcard(maxMinorString)) 0 else maxMinorString!!.toInt()
+        val maxPatch = if (NpmVersionRequirement.isWildcard(maxPatchString)) 0 else maxPatchString!!.toInt()
+
+
+        val maxVersion = Version(maxMajor, maxMinor, maxPatch)
+
+        this.versionRange = VersionRange(min = minVersion, max = maxVersion)
+    }
+
+    override fun isSatisfiedBy(version: Version): Boolean {
+        return version.preReleaseElements.isEmpty() &&
+                version.metadataElements.isEmpty() &&
+            versionRange.contains(version)
+    }
 }
 
 class AndClaus(val predicates: Collection<Claus>): Claus {
@@ -213,6 +289,24 @@ class NpmVersionRequirement : VersionRequirement {
             return value == null ||
                     value.isNullOrBlank() ||
                     value.toUpperCase() == "X"
+        }
+
+        fun isValidPartialVersion(version: String?) =
+            try {
+                version != null &&
+                NpmVersionRequirement.parserFor(version).version()?.major()?.text != null
+            } catch (e: InvalidRequirementFormatException) {
+                false
+            }
+
+
+        internal fun parserFor(value: String): NPMParser {
+            val lexer = NPMLexer(CharStreams.fromString(value))
+            val parser = NPMParser(CommonTokenStream(lexer))
+            val listener = ThrowingRequirementErrorListener(value)
+            lexer.addErrorListener(listener)
+            parser.addErrorListener(listener)
+            return parser
         }
 
         private fun validate(major: String, minor: String?, patch: String?, preRelease: Array<String>? = null, build: Array<String>? = null) {
@@ -282,19 +376,11 @@ class NpmVersionRequirement : VersionRequirement {
 
     val orClaus: Claus
 
-    constructor(rawRequirement: String): super(rawRequirement, RequirementType.NPM) {
-        val lexer = NPMLexer(CharStreams.fromString(rawRequirement))
-        val parser = NPMParser(CommonTokenStream(lexer))
-        val listener = ThrowingRequirementErrorListener(rawRequirement)
-        lexer.addErrorListener(listener)
-        parser.addErrorListener(listener)
-
+    constructor(rawRequirement: String): super(rawRequirement.trim(), RequirementType.NPM) {
+        val parser = parserFor(this.rawRequirement)
         val intersections = parser.union().intersection()
-        val size = intersections.size
-        val size2 = intersections[0].operatorClause().size
-        val op = intersections[0].operatorClause()[0]
         this.orClaus = OrClaus(intersections.map { intersection ->
-            val operatorClauses = intersection.operatorClause().map { Santa.clauseFor(it) }
+            val operatorClauses: Collection<Claus> = intersection.operatorClause().map { Santa.clauseFor(it, this.rawRequirement) }
             val dashClauses = intersection.dashClause().map { DashClaus(it) }
             val clauses = ArrayList<Claus>()
             clauses.addAll(operatorClauses)

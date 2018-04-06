@@ -3,6 +3,7 @@ package com.navelplace.jsemver
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class NpmVersionRequirementTest {
@@ -135,5 +136,100 @@ class NpmVersionRequirementTest {
     @Test
     fun `v0_1_0 should not satisfy caret0_0_x`() {
         assertFalse(Version("0.1.0").satisfies(NpmVersionRequirement("^0.0.x")))
+    }
+
+    @Test
+    fun `version 1_0_0 and requirement 1_0_0 - 2_0_0`() {
+        assertTrue(Version("1.0.0").satisfies(NpmVersionRequirement("1.0.0 - 2.0.0")))
+    }
+
+    @Test
+    fun `version 1_0_0 and requirement 1_0_0 -2_0_0`() {
+        val version = "1.0.0"
+        val requirement = " 1.0.0 - 2.0.0"
+        assertTrue ("$version should satisfy $requirement",
+                { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+
+    }
+
+
+    @Test
+    fun `can parse a lone version`() {
+        val parser = NpmVersionRequirement.parserFor("2.0.0")
+        val intersections = parser.union().intersection()
+        assertEquals(1, intersections.size)
+        val intersection = intersections[0]
+        assertNotNull(intersection)
+        val clauses = intersection.operatorClause()
+        assertNotNull(clauses)
+        assertEquals(1, clauses.size)
+        val clause = clauses[0]
+        val version = clause.version()
+        assertNotNull(version)
+        assertNotNull(version.major())
+        assertEquals(version.major().text, "2")
+        assertEquals(version.minor().text, "0")
+        assertEquals(version.patch().text, "0")
+
+
+//        assertNotNull(parser)
+//        assertNotNull(parser?.version())
+//        assertNotNull(parser?.version()?.major())
+//        assertNotNull(parser?.version()?.minor())
+//        assertNotNull(parser?.version()?.patch())
+//        assertNotNull(parser?.version()?.major()?.text)
+//        assertNotNull(parser?.version()?.minor()?.text)
+//        assertNotNull(parser?.version()?.patch()?.text)
+    }
+
+    @Test
+    fun `dash ranges` () {
+        val satisfies = mapOf(
+                "1.0.0 - 2.0.0" to arrayOf("1.0.0", "1.1.0", "2.0.0"),
+                "1.0 - 2.0.0" to arrayOf("1.0.0", "1.1.0", "2.0.0"),
+                "1.0.0 - 2.0" to arrayOf("1.0.0", "1.1.0", "2.0.0"),
+                "1.0.0 -2.0.0" to arrayOf("1.0.0", "1.1.0", "2.0.0"),
+                " 1.0.0 -2.0.0 " to arrayOf("1.0.0", "1.1.0", "2.0.0"),
+                " 1.0.0- 2.0.0 " to arrayOf("1.0.0", "1.1.0", "2.0.0"),
+                "0.0.0 - 1.0.0 " to arrayOf("0.0.0", "1.0.0", "0.0.1", "0.1.0")
+        )
+
+        val doesNotSatisfy = mapOf(
+                "1.0.0 - 2.0.0" to arrayOf("0.0.1", "0.1.0", "2.0.1", "2.1.0", "1.0.0-alpha", "1.0.0-alpha+build", "1.1.1-alpha"),
+                "1.0.0 -2.0.0" to arrayOf("0.0.1", "0.1.0", "2.0.1", "2.1.0", "1.0.0-alpha", "1.0.0-alpha+build", "1.1.1-alpha"),
+                " 1.0.0 -2.0.0 " to arrayOf("0.0.1", "0.1.0", "2.0.1", "2.1.0", "1.0.0-alpha", "1.0.0-alpha+build", "1.1.1-alpha"),
+                "1.0.0- 2.0.0" to arrayOf("0.0.1", "0.1.0", "2.0.1", "2.1.0", "1.0.0-alpha", "1.0.0-alpha+build", "1.1.1-alpha"),
+                "0.0.0 - 1.0.0" to arrayOf("1.0.1", "1.1.0", "2.0.1", "2.1.0", "0.0.0-alpha", "0.0.0-alpha+build", "0.1.1-alpha")
+        )
+
+        satisfies.forEach { requirement, versions ->
+            versions.forEach {version ->
+                try {
+                    assertTrue ("$version should satisfy $requirement",
+                            { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+                } catch(e: AssertionError) {
+                    throw e
+                } catch (e: Exception) {
+                    throw RuntimeException("Problem with version $version and requirement $requirement", e)
+                }
+
+
+            }
+        }
+
+        doesNotSatisfy.forEach { requirement, versions ->
+            versions.forEach {version ->
+                try {
+                    assertFalse ("$version should not satisfy $requirement",
+                            { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+                } catch(e: AssertionError) {
+                    throw e
+                } catch (e: Exception) {
+                    throw RuntimeException("Problem with version $version and requirement $requirement", e)
+                }
+
+
+            }
+        }
     }
 }

@@ -13,6 +13,20 @@ package com.navelplace.jsemver
 class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: Version, val maxInclusive: Boolean = true) {
 
     /**
+     * @suppress
+     */
+    companion object {
+        /**
+         * All [Version] instances match this [VersionRange]
+         */
+        val MATCH_ALL = VersionRange(min= Version.MIN_VERSION, max = Version.MAX_VERSION, minInclusive = true, maxInclusive = true)
+
+        /**
+         * No [Version] instances ever match this [VersionRange]
+         */
+        val MATCH_NONE = VersionRange(min= Version.MAX_VERSION, max = Version.MIN_VERSION, minInclusive = false, maxInclusive = false)
+    }
+    /**
      * Tests a [Version] for inclusion in this range
      *
      * @param version The version to test for inclusion

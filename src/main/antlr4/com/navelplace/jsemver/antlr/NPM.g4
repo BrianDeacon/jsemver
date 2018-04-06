@@ -41,6 +41,7 @@ VERSION_ELEMENT: '0' | [1-9][0-9]* ;
 DOT: '.' ;
 PLUS: '+' ;
 DASH: '-' ;
+DASH_2: '@' ;
 CARET: '^' ;
 ASTERISK: '*' ;
 
