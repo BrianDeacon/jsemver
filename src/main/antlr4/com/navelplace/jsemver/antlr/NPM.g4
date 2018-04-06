@@ -22,8 +22,6 @@ version
 
 v: V ;
 
-
-
 major: VERSION_ELEMENT | WILDCARD ;
 minor: VERSION_ELEMENT | WILDCARD;
 patch: VERSION_ELEMENT | WILDCARD ;
@@ -31,7 +29,8 @@ preRelease: dottedLegal;
 build: dottedLegal;
 
 dottedLegal: legalCharacters (DOT legalCharacters)* ;
-legalCharacters: (WITHOUT_V | v | DASH)+ ;
+legalCharacters: (WITHOUT_V | v | DASH | x)+ ;
+x: X ;
 
 operator
   : LT | GT | GTEQ | LTEQ | EQ | TILDE | CARET
@@ -43,11 +42,12 @@ DOT: '.' ;
 PLUS: '+' ;
 DASH: '-' ;
 CARET: '^' ;
+ASTERISK: '*' ;
 
 V: [vV] ;
 //WITH_DASH: [0-9a-zA-Z-]+ ;
 //WITHOUT_DASH: [0-9a-zA-Z]+;
-WITHOUT_V: [a-uA-U0-9w-zW-Z]+;
+WITHOUT_V: [a-uA-U0-9wy-zWY-Z]+;
 LTEQ: LT EQ ;
 GTEQ: GT EQ ;
 LT: '<' ;
@@ -55,6 +55,8 @@ GT: '>' ;
 EQ: '=' ;
 PIPE: '|' ;
 OR: PIPE PIPE ;
-WILDCARD: [xX] | '*' ;
+WILDCARD: X | ASTERISK ;
+X: [xX] ;
+
 TILDE: '~' ;
 WS                 : [\t ]+ -> skip ;

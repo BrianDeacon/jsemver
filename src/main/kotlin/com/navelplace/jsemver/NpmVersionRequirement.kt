@@ -39,14 +39,13 @@ abstract class Santa : Claus {
         fun clauseFor(context: NPMParser.OperatorClauseContext) : Claus{
             val operator = Operator.forString(context.operator()?.text?.toUpperCase())
             return when(operator) {
-                Operator.EQ -> EqualClause(context)
+                null, Operator.EQ -> EqualClause(context)
                 Operator.TILDE -> TildeClause(context)
                 Operator.CARET -> CaretClause(context)
                 Operator.LT -> LessThanClause(context)
                 Operator.GTEQ -> GreaterThanEqualClause(context)
                 Operator.GT -> GreaterThanClause(context)
                 Operator.LTEQ -> LessThanEqualClause(context)
-                null -> throw RuntimeException("Huh?")
             }
         }
     }
@@ -59,14 +58,14 @@ abstract class Santa : Claus {
     protected abstract fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange
 
     protected open fun minFor(versionContext: NPMParser.VersionContext): Version {
-        val preRelease = versionContext.preRelease().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
-        val build = versionContext.build().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
+        val preRelease = versionContext.preRelease()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
+        val build = versionContext.build()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
         return NpmVersionRequirement.minFor(versionContext.major().text, versionContext.minor().text, versionContext.patch().text, preRelease, build)
     }
 
     protected open fun maxFor(versionContext: NPMParser.VersionContext): Version {
-        val preRelease = versionContext.preRelease().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
-        val build = versionContext.build().dottedLegal().legalCharacters().map { it.text }.toTypedArray()
+        val preRelease = versionContext.preRelease()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
+        val build = versionContext.build()?.dottedLegal()?.legalCharacters()?.map { it.text }?.toTypedArray()
         return NpmVersionRequirement.maxFor(versionContext.major().text, versionContext.minor().text, versionContext.patch().text, preRelease, build)
     }
 
@@ -216,30 +215,41 @@ class NpmVersionRequirement : VersionRequirement {
         private fun validate(major: String, minor: String?, patch: String?, preRelease: Array<String>? = null, build: Array<String>? = null) {
             val preReleaseArray = preRelease ?: emptyArray()
             val buildArray = build ?: emptyArray()
+            if (isWildcard(minor) && !isWildcard(patch)) {
+                throw InvalidRequirementFormatException("$major.$minor.$patch")
+            }
             if (
                     (isWildcard(minor) || isWildcard(patch)) &&
                     (preReleaseArray.isNotEmpty() || buildArray.isNotEmpty())
             ) {
-                //TODO: Fix message to include array contents
-                throw InvalidRequirementFormatException("$major.$minor.$patch")
+                val pre = preReleaseArray.joinToString(".")
+                val b = buildArray.joinToString(".")
+                //TODO: This might not format the error correctly if pre or b are empty
+                throw InvalidRequirementFormatException("$major.$minor.$patch-$pre+$b")
             }
         }
         internal fun maxFor(major: String, minor: String?, patch: String?, preRelease: Array<String>? = null, build: Array<String>? = null): Version {
             var majorInt = major.toInt()
             var minorInt = if (minor?.toUpperCase() == "X" || minor.isNullOrBlank()) 0 else minor!!.toInt()
             var patchInt = if (patch?.toUpperCase() == "X" || patch.isNullOrBlank()) 0 else patch!!.toInt()
-            val preReleaseArray = if (preRelease == null) emptyArray() else preRelease
-            val buildArray = if (build == null) emptyArray() else build
+
+            var preReleaseArray = preRelease ?: emptyArray()
+            var buildArray = build ?: emptyArray()
+            if (isWildcard(minor) || isWildcard(patch)) {
+                preReleaseArray = emptyArray()
+                buildArray = emptyArray()
+            }
 
 
 
-            if (patch != "X" && minor == "X") {
+
+            if (!isWildcard(patch) && isWildcard(minor)) {
                 throw InvalidRequirementFormatException("$major.$minor.$patch")
             }
-            if (patch == "X" && minor == "X") {
+            if (isWildcard(patch) && isWildcard(minor)) {
                 majorInt++
             }
-            if (patch == "X" && minor != "X") {
+            if (isWildcard(patch) && !isWildcard(minor)) {
                 minorInt++
             }
 
@@ -251,8 +261,12 @@ class NpmVersionRequirement : VersionRequirement {
             val majorInt = major.toInt()
             val minorInt = if (minor?.toUpperCase() == "X" || minor.isNullOrBlank()) 0 else minor!!.toInt()
             val patchInt = if (patch?.toUpperCase() == "X" || patch.isNullOrBlank()) 0 else patch!!.toInt()
-            val preReleaseArray = if (preRelease == null) emptyArray() else preRelease
-            val buildArray = if (build == null) emptyArray() else build
+            var preReleaseArray = preRelease ?: emptyArray()
+            var buildArray = build ?: emptyArray()
+            if (isWildcard(minor) || isWildcard(patch)) {
+                preReleaseArray = emptyArray()
+                buildArray = emptyArray()
+            }
 
 
             if (patch != "X" && minor == "X") {
