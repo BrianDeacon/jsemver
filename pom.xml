@@ -55,7 +55,7 @@
         <maven.release.plugin.version>2.5</maven.release.plugin.version>
         <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
         <antlr.version>4.7.1</antlr.version>
-        <antlr.maven.plugin.version>4.3</antlr.maven.plugin.version>
+        <antlr.maven.plugin.version>${antlr.version}</antlr.maven.plugin.version>
     </properties>
 
     <pluginRepositories>

@@ -230,7 +230,7 @@ class DashClaus : Claus {
 
             val escaped = preRelease.replace(".", "\\.")
             val regex = "$minMajor\\.$minMinor\\.$minPatch((\\s+[-]\\s+)|(\\s+[-])|([-]\\s+))$escaped"
-            return regex.toRegex().matches(rawRequirement)
+            return regex.toRegex().containsMatchIn(rawRequirement)
         }
 
         fun isFalseOperator(context: NPMParser.OperatorClauseContext, rawRequirement: String): Boolean {

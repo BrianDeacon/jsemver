@@ -224,11 +224,21 @@ class NpmVersionRequirementTest {
     }
 
     @Test
-    fun `version 1_2_3 and requirement ~1_2_3-beta_2` () {
-        val version = "1.2.3"
-        val requirement = "~1.2.3-beta.2"
-        assertTrue ("$version should satisfy $requirement",
-                { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+    fun `from the npm docs` () {
+        val versions = arrayOf("1.2.3", "8.5.0", "1.0.0", "5.1.0")
+        val requirement = "1.x || >=8.5.0 || 5.0.0 - 7.2.3"
+        versions.forEach {version ->
+            try {
+                assertTrue ("$version should satisfy $requirement",
+                        { Version(version).satisfies(NpmVersionRequirement(requirement)) })
+            } catch(e: AssertionError) {
+                throw e
+            } catch (e: Exception) {
+                throw RuntimeException("Problem with version $version and requirement $requirement", e)
+            }
+
+
+        }
     }
 
     @Test
