@@ -56,6 +56,7 @@
         <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
         <antlr.version>4.7.1</antlr.version>
         <antlr.maven.plugin.version>${antlr.version}</antlr.maven.plugin.version>
+        <source.plugin.version>3.0.1</source.plugin.version>
     </properties>
 
     <pluginRepositories>
@@ -171,6 +172,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>${source.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -209,7 +211,6 @@
                         <configuration>
                             <sourceDirs>
                                 <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-                                <sourceDir>${project.basedir}/src/main/java</sourceDir>
                                 <sourceDir>${project.basedir}/target/generated-sources/antlr4</sourceDir>
                             </sourceDirs>
                         </configuration>
