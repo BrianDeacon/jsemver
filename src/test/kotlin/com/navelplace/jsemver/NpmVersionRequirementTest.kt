@@ -191,6 +191,7 @@ class NpmVersionRequirementTest {
                 "1.0.0- 2.0.0" to arrayOf("0.0.1", "0.1.0", "2.0.1", "2.1.0", "1.0.0-alpha", "1.0.0-alpha+build", "1.1.1-alpha"),
                 "0.0.0 - 1.0.0" to arrayOf("1.0.1", "1.1.0", "2.0.1", "2.1.0", "0.0.0-alpha", "0.0.0-alpha+build", "0.1.1-alpha")
         )
+        assertTrue { Version("1.1.0").satisfies(NpmVersionRequirement("1.0.0 -2.0.0"))}
 
         satisfies.forEach { requirement, versions ->
             versions.forEach {version ->
@@ -239,6 +240,53 @@ class NpmVersionRequirementTest {
 
 
         }
+    }
+
+    @Test
+    fun `Correctly escapes the letter v`() {
+        val v1Clean = "1.1.1-vvv.2"
+        val v1 = "v$v1Clean"
+        val v2Clean = "1.1.2-vvv.2"
+        val v2 = "v$v2Clean"
+        val v1Plus = "1.1.1-vvv.3"
+        val v1Minus = "1.1.1-avvv.3"
+        val requirement = NpmVersionRequirement("$v1 || $v2")
+        assertTrue { requirement.isSatisfiedBy(v1Clean) }
+        assertTrue { requirement.isSatisfiedBy(v2Clean) }
+        assertFalse {requirement.isSatisfiedBy(v1Minus)}
+        assertFalse {requirement.isSatisfiedBy(v1Plus)}
+    }
+
+    @Test
+    fun `Correctly wildcards X`() {
+        val requirement = NpmVersionRequirement("1.x")
+        val requirement2 = NpmVersionRequirement("1.X")
+        val requirement3 = NpmVersionRequirement("1.*")
+        arrayOf("1.1.1", "1.0.0", "1.0.1").forEach {version ->
+            arrayOf(requirement, requirement2, requirement3).forEach { req ->
+                assertTrue {  req.isSatisfiedBy(version) }
+            }
+        }
+    }
+
+    @Test
+    fun `escaping dashes`() {
+        val requirement = NpmVersionRequirement("123.123.123-asdf || 4.4.4-wer")
+        arrayOf("123.123.123-asdf", "4.4.4-wer").forEach {
+            assertTrue { requirement.isSatisfiedBy(it) }
+        }
+    }
+
+    @Test
+    fun `version numbers hidden in the prerelease string`() {
+        val version = "1.2.3-SNASHOT1.2.3"
+        val version2 = "1.2.3-X1.2.3"
+        assertTrue(Version(version2).newerThan(Version(version)))
+        val requirement = NpmVersionRequirement(version)
+        assertTrue(requirement.isSatisfiedBy(version))
+        assertTrue(NpmVersionRequirement(">=1.2.3-SNASHOT1.2.3").isSatisfiedBy("1.2.3-X1.2.3"))
+        assertFalse(NpmVersionRequirement("<=1.2.3-SNASHOT1.2.3").isSatisfiedBy("1.2.3-X1.2.3"))
+        assertFalse(requirement.isSatisfiedBy("1.2.3-SNASHOT1.0.0"))
     }
 
     @Test
