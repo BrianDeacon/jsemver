@@ -1,5 +1,8 @@
-package com.navelplace.jsemver
+package com.navelplace.jsemver.maven
 
+import com.navelplace.jsemver.InvalidVersionFormatException
+import com.navelplace.jsemver.Version
+import com.navelplace.jsemver.VersionRange
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

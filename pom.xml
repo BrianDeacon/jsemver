@@ -196,6 +196,9 @@
                 </executions>
                 <configuration>
                     <outputFormat>javadoc</outputFormat>
+                    <sourceDirectories>
+                        <dir>src/main/kotlin</dir>
+                    </sourceDirectories>
                 </configuration>
             </plugin>
             <plugin>

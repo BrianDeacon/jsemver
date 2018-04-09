@@ -1,5 +1,6 @@
-package com.navelplace.jsemver
+package com.navelplace.jsemver.npm
 
+import com.navelplace.jsemver.Version
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

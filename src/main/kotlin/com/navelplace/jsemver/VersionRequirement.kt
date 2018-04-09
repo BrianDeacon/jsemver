@@ -1,5 +1,8 @@
 package com.navelplace.jsemver
 
+import com.navelplace.jsemver.maven.MavenVersionRequirement
+import com.navelplace.jsemver.npm.NpmVersionRequirement
+
 /**
  * Indicates a specific [VersionRequirement] implementation
  */
@@ -18,11 +21,12 @@ enum class RequirementType {
  *
  * @see SimpleVersionRequirement
  * @see MavenVersionRequirement
+ * @see NpmVersionRequirement
  */
 abstract class VersionRequirement protected constructor(requirement: String,
                                                         val type: RequirementType) {
     protected val rawRequirement: String = requirement.trim()
-    private val validRanges: Array<VersionRange>
+//    private val validRanges: Array<VersionRange>
 
     /**
      * @suppress
@@ -43,10 +47,10 @@ abstract class VersionRequirement protected constructor(requirement: String,
         }
     }
 
-    /**
-     * @suppress
-     */
-    protected abstract fun calculate(rawRequirement: String): Array<VersionRange>
+//    /**
+//     * @suppress
+//     */
+//    protected abstract fun calculate(rawRequirement: String): Array<VersionRange>
 
     /**
      * Returns true if the requirement is met by the given [version]
@@ -60,9 +64,7 @@ abstract class VersionRequirement protected constructor(requirement: String,
      * @param version The version to test
      * @return True if the requirement is met
      */
-    open fun isSatisfiedBy(version: Version): Boolean {
-        return validRanges.any { it.contains(version) }
-    }
+    abstract fun isSatisfiedBy(version: Version): Boolean
 
     /**
      * The raw string representation of the requirement
@@ -70,21 +72,21 @@ abstract class VersionRequirement protected constructor(requirement: String,
      */
     override fun toString() = rawRequirement
 
-    /**
-     * Returns individual [VersionRange] instances that satisfy this requirement
-     * @return An individual [VersionRange]
-     * @param index The index of the requested range
-     */
-    operator fun get(index: Int) = validRanges[index]
+//    /**
+//     * Returns individual [VersionRange] instances that satisfy this requirement
+//     * @return An individual [VersionRange]
+//     * @param index The index of the requested range
+//     */
+//    operator fun get(index: Int) = validRanges[index]
 
-    /**
-     * The number of individual [VersionRange] instances that satisfy this requirement
-     */
-    fun size() = validRanges.size
+//    /**
+//     * The number of individual [VersionRange] instances that satisfy this requirement
+//     */
+//    fun size() = validRanges.size
 
-    init {
-        validRanges = calculate(rawRequirement)
-    }
+//    init {
+//        validRanges = calculate(rawRequirement)
+//    }
 }
 
 /**

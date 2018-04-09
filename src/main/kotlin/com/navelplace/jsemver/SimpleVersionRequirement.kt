@@ -1,16 +1,18 @@
 package com.navelplace.jsemver
 
+import com.navelplace.jsemver.RequirementType.SIMPLE
+
 /**
  * [VersionRequirement] implementation for a simple range of full versions in the form "1.0.0-2.0.0"
  *
- * @constructor Parses the simple [versionRequirement]
  */
-class SimpleVersionRequirement(versionRequirement: String): VersionRequirement(versionRequirement, RequirementType.SIMPLE) {
+class SimpleVersionRequirement: VersionRequirement {
+    private val validVersions: VersionRange
 
     /**
-     * @suppress
+     * Parses the simple [requirement]
      */
-    override fun calculate(rawRequirement: String): Array<VersionRange> {
+    constructor (requirement: String): super(requirement, SIMPLE) {
         val elements = rawRequirement.split("-")
         if (elements.size != 2) {
             throw InvalidSimpleRequirementFormatException(rawRequirement)
@@ -19,8 +21,10 @@ class SimpleVersionRequirement(versionRequirement: String): VersionRequirement(v
         val min = Version(elements[0].trim())
         val max = Version(elements[1].trim())
 
-        return arrayOf(VersionRange(min=min, max=max))
+        validVersions = VersionRange(min=min, max=max)
     }
+
+    override fun isSatisfiedBy(version: Version) = validVersions.contains(version)
 }
 
 /**

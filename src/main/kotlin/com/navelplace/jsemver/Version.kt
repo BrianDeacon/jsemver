@@ -2,6 +2,7 @@ package com.navelplace.jsemver
 
 import com.navelplace.jsemver.RequirementType.*
 import com.navelplace.jsemver.antlr.VersionLexer
+import com.navelplace.jsemver.npm.ThrowingErrorListener
 import com.navelplace.jsemver.antlr.VersionParser as AntlrParser
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.CharStreams
@@ -297,11 +298,3 @@ class Version : Comparable<Version> {
  */
 class InvalidVersionFormatException(val format: String): RuntimeException("Invalid version format: $format")
 
-/**
- * @suppress
- */
-class ThrowingErrorListener(val input: String) : BaseErrorListener() {
-    override fun syntaxError(recognizer: Recognizer<*, *>, offendingSymbol: Any?, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException?) {
-        throw InvalidVersionFormatException(input)
-    }
-}

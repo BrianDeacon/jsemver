@@ -52,5 +52,4 @@ PLUS: '+' ;
 fragment PIPE: '|' ;
 OR: PIPE PIPE ;
 
-
 WS                 : [\t ]+ -> skip ;
