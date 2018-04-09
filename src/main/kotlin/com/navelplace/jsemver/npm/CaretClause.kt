@@ -4,17 +4,19 @@ import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRange
 import com.navelplace.jsemver.antlr.NPMParser
 
-
 /**
  * @suppress
  */
 class CaretClause(context: NPMParser.OperatorClauseContext) : OperatorClause(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = minFor(versionContext), max = maxFor(versionContext), minInclusive = true, maxInclusive = false)
+        return VersionRange(min = minFor(versionContext),
+                            max = maxFor(versionContext),
+                            minInclusive = true,
+                            maxInclusive = false)
     }
 
-    override fun isSatisfiedBy(otherVersion: Version) =
-            if (otherVersion.preRelease.isNotBlank()) {
+    override fun isSatisfiedBy(version: Version) =
+            if (version.preRelease.isNotBlank()) {
                 /*
                 ^1.2.3-beta.2 := >=1.2.3-beta.2 <2.0.0
                 Note that prereleases in the 1.2.3 version will be allowed, if they are greater than or equal to beta.2.
@@ -25,13 +27,13 @@ class CaretClause(context: NPMParser.OperatorClauseContext) : OperatorClause(con
                 Note that prereleases in the 0.0.3 version only will be allowed, if they are greater than or equal to beta.
                 So, 0.0.3-pr.2 would be allowed.
                 */
-                otherVersion.major == range.min.major &&
-                        otherVersion.minor == range.min.minor &&
-                        otherVersion.patch == range.min.patch &&
-                        range.contains(otherVersion)
+                version.major == range.min.major &&
+                version.minor == range.min.minor &&
+                version.patch == range.min.patch &&
+                range.contains(version)
 
             } else {
-                range.contains(otherVersion)
+                range.contains(version)
             }
 
     override fun maxFor(versionContext: NPMParser.VersionContext): Version {

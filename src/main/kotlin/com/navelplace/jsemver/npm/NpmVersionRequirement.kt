@@ -15,9 +15,9 @@ class NpmVersionRequirement : VersionRequirement {
      * @suppress
      */
     companion object {
-        val arrow = '\u2194'
-        val dash = '\uFF0D'.toString()
-        val versionElement = """(?:0|[1-9]\d*)"""
+        private val arrow = '\u2194'
+        private val dash = '\uFF0D'.toString()
+        private val versionElement = """(?:0|[1-9]\d*)"""
 
         private val preReleaseEscape = """(\s|^|\=|\<\=|\>\=|\<|\>|~|\^)(${versionElement}\.${versionElement}\.${versionElement})-""".toRegex()
         private val dashEscape = """(\s+[-])|(\s+[-]\s+)|([-]\s+)""".toRegex()
@@ -26,7 +26,18 @@ class NpmVersionRequirement : VersionRequirement {
         private val xEscape2 = """(\s|^|\=|\<\=|\>\=|\<|\>|~|\^)(0|[1-9]\d*)(\.(?:0|[1-9]\d*)\.)[xX]""".toRegex()
         private val xEscape3 = """(\s|^|\=|\<\=|\>\=|\<|\>|~|\^)(0|[1-9]\d*)(\.\*\.)[xX]""".toRegex()
 
-        private fun escape(requirement: String): String {
+        /*
+        The characters "x", "X", "v", "V", and "-" are ambiguous for the parser.
+        v1.1.1-snapshot-x-v.v.1.2.3
+        Remove the extraneous v in "v1.1.1-vvv", but leave other v's alone.
+        In "1.1.1-SNAPSHOT-1" make the prerelease separator a distinct character.
+        In "2.0 - 3.0" make the dash yet another distinct character
+        Change the x's in "1.x.X" to "*". But don't change x's in "1.1.1-x.y.z"
+        After escaping, v's, x's and dashes will only appear in either the prerelease or build.
+        The following are then unambiguous to ANTLR:
+        1.1.1[DASH]PrereleaseWithXandV+buildWithXAndV || 1.0 [ARROW] 2.0 || 1.*.*
+         */
+        private fun disambiguate(requirement: String): String {
             var escaped = requirement.replace(dashEscape, " ${arrow} ")
             vEscape.findAll(escaped).forEach {
                 escaped = escaped.replaceFirst(vEscape, "${it.groups[1]!!.value}")
@@ -42,20 +53,6 @@ class NpmVersionRequirement : VersionRequirement {
             }
 
             return escaped
-        }
-
-        fun isWildcard(value: String?): Boolean {
-            return  value.isNullOrBlank() ||
-                    value == "*"
-        }
-
-        internal fun parserFor(value: String): NPMParser {
-            val lexer = NPMLexer(CharStreams.fromString(value))
-            val parser = NPMParser(CommonTokenStream(lexer))
-            val listener = ThrowingRequirementErrorListener(value)
-            lexer.addErrorListener(listener)
-            parser.addErrorListener(listener)
-            return parser
         }
 
         private fun validate(major: String, minor: String?, patch: String?, preRelease: Array<String>? = null, build: Array<String>? = null) {
@@ -74,6 +71,21 @@ class NpmVersionRequirement : VersionRequirement {
                 throw InvalidRequirementFormatException("$major.$minor.$patch-$pre+$b")
             }
         }
+
+        internal fun isWildcard(value: String?): Boolean {
+            return  value.isNullOrBlank() ||
+                    value == "*"
+        }
+
+        internal fun parserFor(value: String): NPMParser {
+            val lexer = NPMLexer(CharStreams.fromString(value))
+            val parser = NPMParser(CommonTokenStream(lexer))
+            val listener = ThrowingRequirementErrorListener(value)
+            lexer.addErrorListener(listener)
+            parser.addErrorListener(listener)
+            return parser
+        }
+
         internal fun maxFor(major: String, minor: String?, patch: String?, preRelease: Array<String>? = null, build: Array<String>? = null): Version {
             var majorInt = major.toInt()
             var minorInt = if (isWildcard(minor)) 0 else minor!!.toInt()
@@ -85,9 +97,6 @@ class NpmVersionRequirement : VersionRequirement {
                 preReleaseArray = emptyArray()
                 buildArray = emptyArray()
             }
-
-
-
 
             if (!isWildcard(patch) && isWildcard(minor)) {
                 throw InvalidRequirementFormatException("$major.$minor.$patch")
@@ -114,25 +123,26 @@ class NpmVersionRequirement : VersionRequirement {
                 buildArray = emptyArray()
             }
 
-
             if (!isWildcard(patch) && isWildcard(minor)) {
                 throw InvalidRequirementFormatException("$major.$minor.$patch")
             }
+
             validate(major, minor, patch, preRelease, build)
+
             return Version(majorInt, minorInt, patchInt, preReleaseArray, buildArray)
         }
     }
 
-    private val orClause: Clause
+    private val requirement: Clause
 
     /**
      * Parses an npm-compatible requirement string from the [rawRequirement] argument
      */
     constructor(rawRequirement: String): super(rawRequirement.trim(), RequirementType.NPM) {
-        val parser = parserFor(escape(this.rawRequirement))
+        val parser = parserFor(disambiguate(this.rawRequirement))
         val intersections = parser.union().intersection()
-        this.orClause = OrClause(intersections.map { intersection ->
-            val operatorClauses: Collection<Clause> = intersection.operatorClause().map { OperatorClauseFactory.clauseFor(it, this.rawRequirement) }
+        this.requirement = OrClause(intersections.map { intersection ->
+            val operatorClauses: Collection<Clause> = intersection.operatorClause().map { OperatorClauseFactory.clauseFor(it) }
             val dashClauses = intersection.dashClause().map { DashClause(it) }
             val clauses = ArrayList<Clause>()
             clauses.addAll(operatorClauses)
@@ -141,7 +151,7 @@ class NpmVersionRequirement : VersionRequirement {
         })
     }
 
-    override fun isSatisfiedBy(version: Version) = orClause.isSatisfiedBy(version)
+    override fun isSatisfiedBy(version: Version) = requirement.isSatisfiedBy(version)
 
 }
 

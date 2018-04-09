@@ -30,7 +30,7 @@ internal enum class Operator {
  * @suppress
  */
 object OperatorClauseFactory {
-    fun clauseFor(context: NPMParser.OperatorClauseContext, rawRequirement: String) : Clause {
+    fun clauseFor(context: NPMParser.OperatorClauseContext) : Clause {
         val operator = Operator.forString(context.operator()?.text?.toUpperCase())
         return when(operator) {
             null, Operator.EQ -> EqualClause(context)
@@ -43,7 +43,6 @@ object OperatorClauseFactory {
         }
     }
 }
-
 
 /**
  * @suppress
@@ -80,7 +79,10 @@ abstract class OperatorClause : Clause {
  */
 class EqualClause(context: NPMParser.OperatorClauseContext) : OperatorClause(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = minFor(versionContext), max = maxFor(versionContext), minInclusive = true, maxInclusive = false)
+        return VersionRange(min = minFor(versionContext),
+                            max = maxFor(versionContext),
+                            minInclusive = true,
+                            maxInclusive = false)
     }
 }
 
@@ -89,7 +91,10 @@ class EqualClause(context: NPMParser.OperatorClauseContext) : OperatorClause(con
  */
 class GreaterThanClause(context: NPMParser.OperatorClauseContext) : OperatorClause(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = minFor(versionContext), max = Version.MAX_VERSION, minInclusive = false, maxInclusive = true)
+        return VersionRange(min = minFor(versionContext),
+                            max = Version.MAX_VERSION,
+                            minInclusive = false,
+                            maxInclusive = true)
     }
 }
 
@@ -98,7 +103,10 @@ class GreaterThanClause(context: NPMParser.OperatorClauseContext) : OperatorClau
  */
 class LessThanClause(context: NPMParser.OperatorClauseContext) : OperatorClause(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = Version.MIN_VERSION, max = minFor(versionContext), minInclusive = true, maxInclusive = false)
+        return VersionRange(min = Version.MIN_VERSION,
+                            max = minFor(versionContext),
+                            minInclusive = true,
+                            maxInclusive = false)
     }
 }
 
@@ -107,7 +115,10 @@ class LessThanClause(context: NPMParser.OperatorClauseContext) : OperatorClause(
  */
 class GreaterThanEqualClause(context: NPMParser.OperatorClauseContext) : OperatorClause(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = minFor(versionContext), max = Version.MAX_VERSION, minInclusive = true, maxInclusive = true)
+        return VersionRange(min = minFor(versionContext),
+                            max = Version.MAX_VERSION,
+                            minInclusive = true,
+                            maxInclusive = true)
     }
 }
 
@@ -116,6 +127,9 @@ class GreaterThanEqualClause(context: NPMParser.OperatorClauseContext) : Operato
  */
 class LessThanEqualClause(context: NPMParser.OperatorClauseContext) : OperatorClause(context) {
     override fun rangeFor(versionContext: NPMParser.VersionContext): VersionRange {
-        return VersionRange(min = Version.MIN_VERSION, max = minFor(versionContext), minInclusive = true, maxInclusive = true)
+        return VersionRange(min = Version.MIN_VERSION,
+                            max = minFor(versionContext),
+                            minInclusive = true,
+                            maxInclusive = true)
     }
 }

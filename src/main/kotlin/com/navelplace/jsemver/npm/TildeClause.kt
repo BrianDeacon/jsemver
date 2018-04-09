@@ -4,7 +4,6 @@ import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRange
 import com.navelplace.jsemver.antlr.NPMParser
 
-
 /**
  * @suppress
  */
@@ -37,14 +36,14 @@ class TildeClause(context: NPMParser.OperatorClauseContext) : OperatorClause(con
         return Version(major, minor, patch)
     }
 
-    override fun isSatisfiedBy(otherVersion: Version) =
-            if (otherVersion.preRelease.isNotBlank()) {
-                otherVersion.major == range.min.major &&
-                        otherVersion.minor == range.min.minor &&
-                        otherVersion.patch == range.min.patch &&
-                        range.contains(otherVersion)
+    override fun isSatisfiedBy(version: Version) =
+            if (version.preRelease.isNotBlank()) {
+                version.major == range.min.major &&
+                        version.minor == range.min.minor &&
+                        version.patch == range.min.patch &&
+                        range.contains(version)
 
             } else {
-                range.contains(otherVersion)
+                range.contains(version)
             }
 }
