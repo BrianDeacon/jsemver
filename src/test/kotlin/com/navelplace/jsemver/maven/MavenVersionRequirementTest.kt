@@ -1,13 +1,24 @@
 package com.navelplace.jsemver.maven
 
+import com.navelplace.jsemver.InvalidRequirementFormatException
 import com.navelplace.jsemver.InvalidVersionFormatException
+import com.navelplace.jsemver.RequirementType
 import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRange
+import com.navelplace.jsemver.antlr.ValidVersionBaseListener
+import com.navelplace.jsemver.antlr.ValidVersionLexer
+import com.navelplace.jsemver.antlr.ValidVersionParser
+import com.navelplace.jsemver.npm.ThrowingErrorListener
+import org.antlr.v4.runtime.CharStreams
+import org.antlr.v4.runtime.CommonTokenStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /*
 1.0	x >= 1.0 * The default Maven meaning for 1.0 is everything (,) but with 1.0 recommended. Obviously this doesn't work for enforcing versions here, so it has been redefined as a minimum version.
@@ -24,16 +35,6 @@ import org.junit.Test
 
 class MavenVersionRequirementTest {
 
-    @Test
-    fun `MavenVersionRequirement correctly parses`() {
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("[1.1,2.2]"), "[", "1.1", "2.2", "]")
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("[1.1,2.2)"), "[", "1.1", "2.2", ")")
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("(1.1,2.2)"), "(", "1.1", "2.2", ")")
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("(1.1,2.2]"), "(", "1.1", "2.2", "]")
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("(1.1.1,2.2]"), "(", "1.1.1", "2.2", "]")
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("[,2.2]"), "[", "", "2.2", "]")
-        doesMatch(MavenVersionRequirement.VERSION_REQUIREMENT_REGEX.find("[1.1,]"), "[", "1.1", "", "]")
-    }
 
     @Test
     fun `Is not bothered by whitespace`() {
@@ -96,10 +97,70 @@ class MavenVersionRequirementTest {
             } catch(e: Exception) {
                 when(e) {
                     is InvalidMavenVersionRequirementFormatException,
+                    is InvalidRequirementFormatException,
                     is InvalidVersionFormatException -> {}
                     else -> fail("Should have thrown ${InvalidMavenVersionRequirementFormatException::class.simpleName} or ${InvalidVersionFormatException::class.simpleName} for $it")
                 }
             }
+        }
+    }
+
+    @Test
+    fun `Can handle lone version without brackets`() {
+        assertTrue { MavenVersionRequirement("1.5").isSatisfiedBy("1.5.0") }
+        assertTrue { MavenVersionRequirement("1.5").isSatisfiedBy("1.6.0") }
+    }
+
+    @Test
+    fun fooasdf() {
+        val req = "(1.1,2.2"
+
+        val lexer = ValidVersionLexer(CharStreams.fromString(req))
+        val listener = ThrowingErrorListener(req)
+        lexer.addErrorListener(listener)
+        val parser = ValidVersionParser(CommonTokenStream(lexer))
+        try {
+            val theRange = parser.range().RANGE()
+            assertNull(theRange)
+//            val range = theRange.text
+//            assertEquals(req,range)
+        } catch (e: Exception) {
+            fail(e.message)
+        }
+
+
+    }
+
+    @Test
+    fun `Validates correctly`() {
+
+        val valid = arrayOf("[1.1,2.2]",
+                "[1.1.1,2.2]",
+                "[1.1,2.2.2]",
+                "(1.1,2.2]",
+                "(1.1,2.2)",
+                "[1.1,2.2)",
+                "(1.1,2.2],[1.1,2.2]",
+                "(1.1,2.2],[1.1.1,2.2.2]",
+                " ( 1.1 , 2.2 ] ",
+                "[1,2],[1]"
+        )
+        val invalid = arrayOf("[x1.1,2.2]",
+                "[1.1.1,2.2]p",
+                "l[1.1,2.2.2]",
+                "((1.1,2.2]",
+                "(1.1,2.2))",
+                "[[1.1,2.2)]",
+                "(1.1x,2.2],[1.x,2.2]",
+                "(1.1,2.2][1.1.1,2.2.2]",
+                "(1.1,2.2],"
+        )
+        invalid.forEach {
+            assertFalse("$it should not be valid", MavenVersionRequirement.isValid(it))
+        }
+
+        valid.forEach {
+            assertTrue("$it should be valid", MavenVersionRequirement.isValid(it))
         }
     }
 
@@ -172,6 +233,11 @@ class MavenVersionRequirementTest {
         assertFalse(MavenVersionRequirement("(,1.1),(1.1,)").isSatisfiedBy("1.1.0"))
 
 
+    }
+
+    @Test
+    fun `1-5-0 should satisfy paren-comma-2-point-0-square-bracket`() {
+        assertTrue { Version("1.5.0").satisfies("(,2.0]", RequirementType.MAVEN) }
     }
 
 }

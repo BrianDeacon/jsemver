@@ -292,9 +292,3 @@ class Version : Comparable<Version> {
             false
         }
 }
-
-/**
- * @suppress
- */
-class InvalidVersionFormatException(val format: String): RuntimeException("Invalid version format: $format")
-

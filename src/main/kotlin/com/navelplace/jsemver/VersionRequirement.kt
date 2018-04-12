@@ -26,7 +26,6 @@ enum class RequirementType {
 abstract class VersionRequirement protected constructor(requirement: String,
                                                         val type: RequirementType) {
     protected val rawRequirement: String = requirement.trim()
-//    private val validRanges: Array<VersionRange>
 
     /**
      * @suppress
@@ -89,7 +88,3 @@ abstract class VersionRequirement protected constructor(requirement: String,
 //    }
 }
 
-/**
- * @suppress
- */
-open class InvalidRequirementFormatException(message: String): RuntimeException(message)

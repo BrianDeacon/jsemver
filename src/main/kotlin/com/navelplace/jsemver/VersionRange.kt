@@ -59,4 +59,10 @@ class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: 
         result = 31 * result + maxInclusive.hashCode()
         return result
     }
+
+    override fun toString(): String {
+        return "VersionRange(min=$min, minInclusive=$minInclusive, max=$max, maxInclusive=$maxInclusive)"
+    }
+
+
 }
