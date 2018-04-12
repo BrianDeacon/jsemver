@@ -33,3 +33,5 @@ the [NPM semver format](https://www.npmjs.com/package/semver)
 
 JSemver is written in Kotlin, but is designed to be java-friendly and is compatible with any JVM language
 using 1.6 or greater.
+
+
