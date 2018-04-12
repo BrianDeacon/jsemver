@@ -12,6 +12,9 @@ import com.navelplace.jsemver.VersionRequirement
  *
  */
 class MavenVersionRequirement: VersionRequirement {
+    /**
+     * @suppress
+     */
     companion object {
         private val whitespace = """\s*"""
         private val comma = """[\,]"""
@@ -22,6 +25,7 @@ class MavenVersionRequirement: VersionRequirement {
                 \(
             ]
         """.stripWhitespace()
+
         private val closeBracket = """
             [
                 \]
@@ -43,7 +47,6 @@ class MavenVersionRequirement: VersionRequirement {
                 )
             )
         """.stripWhitespace()
-
 
         private val fullVersion = """
             (?:
@@ -87,6 +90,7 @@ class MavenVersionRequirement: VersionRequirement {
                     $whitespace
                 )
             """.stripWhitespace()
+
         private val singleRange = """
             (?:
                 $twoElementRange
@@ -106,6 +110,7 @@ class MavenVersionRequirement: VersionRequirement {
                 )
             $dollar
             """.stripWhitespace()
+
         private val loneVersion = """
 
                 (?:
@@ -123,22 +128,27 @@ class MavenVersionRequirement: VersionRequirement {
             $dollar
             """.stripWhitespace().toRegex()
 
-        fun validate(requirement: String) {
+        private fun validate(requirement: String) {
             if (!isValid(requirement)) {
                 throw InvalidMavenVersionRequirementFormatException(requirement)
             }
 
         }
 
-        fun String.stripWhitespace(): String {
+        private fun String.stripWhitespace(): String {
             return this
                     .replace(" ", "")
                     .replace("\n", "")
                     .replace("\t", "")
         }
 
+        /**
+         * Verifies that [requirement] is a valid version requirement string according
+         * to the Maven standard
+         */
         fun isValid(requirement: String) = regex.matches(requirement)
     }
+
     private val validVersions: Array<VersionRange>
 
     /**

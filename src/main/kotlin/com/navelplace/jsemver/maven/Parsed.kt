@@ -8,19 +8,21 @@ import com.navelplace.jsemver.npm.ThrowingRequirementErrorListener
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
-class ParsedVersion {
-
-
+/**
+ * @suppress
+ */
+internal class ParsedVersion {
     val major: String?
     val minor: String?
     val patch: String?
+
     constructor(major: String?, minor: String?, patch: String?) {
         this.major = checkZero(major)
         this.minor = checkZero(minor)
         this.patch = checkZero(patch)
     }
 
-    fun checkZero(value: String?): String? {
+    private fun checkZero(value: String?): String? {
         if (value != null && value.length > 1 && value.startsWith("0")) {
             throw InvalidMavenVersionRequirementFormatException(value)
         } else {
@@ -35,8 +37,10 @@ class ParsedVersion {
     }
 }
 
-class ParsedRange {
-
+/**
+ * @suppress
+ */
+internal class ParsedRange {
     val v1: ParsedVersion?
     val v2: ParsedVersion?
     val comma: String?
@@ -85,22 +89,6 @@ class ParsedRange {
         return VersionRange(min = min, max = max, minInclusive = minInclusive, maxInclusive = maxInclusive)
     }
 
-    /*
-        1.5 -- >=1.5.0
-        [1.5] -- =1.5.0
-        [1.5,1.6] -- >=1.5.0 <=1.6.0
-        [1,2.1] -- >=1.0.0 <=2.1.0
-        (1,2) -- >1.0.0 <2.0.0
-        [1,2) -- >=1.0.0 <2.0.0
-        [1,] -- >=1.0.0
-        (1,] -- >1.0.0
-        (,2] -- <=2.0.0
-        (,2) -- <2.0.0
-         */
-
-    fun minInclusive() = this.open != "("
-    fun maxInclusive() = this.close == "]"
-
     fun min(): Version {
         //"[,]" or "[,2]"
         return if (v1 == null) {
@@ -121,17 +109,18 @@ class ParsedRange {
         return if (v2 == null) {
             Version.MAX_VERSION
         } else {
-            val major = v2?.major?.toInt()?: 0
-            val minor = v2?.minor?.toInt()?: 0
-            val patch = v2?.patch?.toInt()?: 0
-
+            val major = v2.major?.toInt()?: 0
+            val minor = v2.minor?.toInt()?: 0
+            val patch = v2.patch?.toInt()?: 0
             Version(major, minor, patch)
         }
     }
 }
 
-
-class ParsedRanges {
+/**
+ * @suppress
+ */
+internal class ParsedRanges {
     companion object {
         private fun parserFor(value: String): MavenParser {
             val lexer = MavenLexer(CharStreams.fromString(value))
@@ -166,25 +155,5 @@ class ParsedRanges {
         return "${ranges.joinToString(",")}"
     }
 
-    fun validate(): ParsedRanges {
-        //If one bracket is missing, both must be missing
-        if (ranges.any { !it.bracketsValid() }) {
-            throw InvalidMavenVersionRequirementFormatException(ranges.toString())
-        }
-        //Only one raw range allowed
-        if (ranges.any { it.hasNoBrackets() }) {
-            if (ranges.size > 1) {
-                throw InvalidMavenVersionRequirementFormatException(ranges.toString())
-            }
-        }
-        //Empty [] or () is never valid
-        if (ranges.any { it.isEmpty() }) {
-            throw InvalidMavenVersionRequirementFormatException(ranges.toString())
-        }
-        return this
-    }
-
     fun toVersionRanges() = ranges.map { it.toVersionRange() }.toTypedArray()
-
-
 }

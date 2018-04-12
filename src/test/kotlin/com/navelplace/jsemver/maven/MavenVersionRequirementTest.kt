@@ -5,19 +5,11 @@ import com.navelplace.jsemver.InvalidVersionFormatException
 import com.navelplace.jsemver.RequirementType
 import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRange
-import com.navelplace.jsemver.antlr.ValidVersionBaseListener
-import com.navelplace.jsemver.antlr.ValidVersionLexer
-import com.navelplace.jsemver.antlr.ValidVersionParser
-import com.navelplace.jsemver.npm.ThrowingErrorListener
-import org.antlr.v4.runtime.CharStreams
-import org.antlr.v4.runtime.CommonTokenStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /*
@@ -112,26 +104,6 @@ class MavenVersionRequirementTest {
     }
 
     @Test
-    fun fooasdf() {
-        val req = "(1.1,2.2"
-
-        val lexer = ValidVersionLexer(CharStreams.fromString(req))
-        val listener = ThrowingErrorListener(req)
-        lexer.addErrorListener(listener)
-        val parser = ValidVersionParser(CommonTokenStream(lexer))
-        try {
-            val theRange = parser.range().RANGE()
-            assertNull(theRange)
-//            val range = theRange.text
-//            assertEquals(req,range)
-        } catch (e: Exception) {
-            fail(e.message)
-        }
-
-
-    }
-
-    @Test
     fun `Validates correctly`() {
 
         val valid = arrayOf("[1.1,2.2]",
@@ -143,7 +115,9 @@ class MavenVersionRequirementTest {
                 "(1.1,2.2],[1.1,2.2]",
                 "(1.1,2.2],[1.1.1,2.2.2]",
                 " ( 1.1 , 2.2 ] ",
-                "[1,2],[1]"
+                "[1,2],[1]",
+                "1.1",
+                "[1.1]"
         )
         val invalid = arrayOf("[x1.1,2.2]",
                 "[1.1.1,2.2]p",
