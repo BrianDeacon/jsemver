@@ -1,4 +1,4 @@
-package com.navelplace.jsemver.npm
+package com.navelplace.jsemver
 
 import com.navelplace.jsemver.InvalidRequirementFormatException
 import com.navelplace.jsemver.InvalidVersionFormatException

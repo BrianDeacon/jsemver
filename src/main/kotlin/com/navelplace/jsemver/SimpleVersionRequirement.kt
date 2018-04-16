@@ -1,12 +1,35 @@
 package com.navelplace.jsemver
 
 import com.navelplace.jsemver.RequirementType.SIMPLE
+import com.navelplace.jsemver.regex.RegexConstants.caret
+import com.navelplace.jsemver.regex.RegexConstants.dash
+import com.navelplace.jsemver.regex.RegexConstants.dollar
+import com.navelplace.jsemver.regex.RegexConstants.fullVersion
 
 /**
  * [VersionRequirement] implementation for a simple range of full versions in the form "1.0.0-2.0.0"
  *
  */
 class SimpleVersionRequirement: VersionRequirement {
+
+    /**
+     * @suppress
+     */
+    companion object {
+        private fun String.stripWhitespace(): String {
+            return this.replace("""\s+""".toRegex(), "")
+        }
+
+        private val regex = """
+            $caret
+                $fullVersion
+                $dash
+                $fullVersion
+            $dollar
+            """.stripWhitespace().toRegex()
+
+        fun isValid(versionRequirement: String) = regex.matches(versionRequirement)
+    }
     private val validVersions: VersionRange
 
     /**

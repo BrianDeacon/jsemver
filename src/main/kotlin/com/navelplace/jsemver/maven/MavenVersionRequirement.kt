@@ -5,6 +5,11 @@ import com.navelplace.jsemver.RequirementType.MAVEN
 import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRange
 import com.navelplace.jsemver.VersionRequirement
+import com.navelplace.jsemver.regex.RegexConstants.comma
+import com.navelplace.jsemver.regex.RegexConstants.dollar
+import com.navelplace.jsemver.regex.RegexConstants.fullVersion
+import com.navelplace.jsemver.regex.RegexConstants.whitespace
+import com.navelplace.jsemver.regex.stripWhitespace
 
 /**
  * [VersionRequirement] implementation based on Maven's version range specification
@@ -12,13 +17,12 @@ import com.navelplace.jsemver.VersionRequirement
  *
  */
 class MavenVersionRequirement: VersionRequirement {
+
     /**
      * @suppress
      */
     companion object {
-        private val whitespace = """\s*"""
-        private val comma = """[\,]"""
-        private val dollar = "$"
+
         private val openBracket = """
             [
                 \[
@@ -33,38 +37,7 @@ class MavenVersionRequirement: VersionRequirement {
             ]
         """.stripWhitespace()
 
-        private val versionNumber = """
-            (?:
-                (?:
-                0
-                )
 
-                |
-
-                (?:
-                    [1-9]
-                    \d*
-                )
-            )
-        """.stripWhitespace()
-
-        private val fullVersion = """
-            (?:
-                $whitespace
-                (?:
-                    $versionNumber
-                    (?:
-                        \.
-                        $versionNumber
-                        (?:
-                            \.
-                            $versionNumber
-                        )?
-                    )?
-                )
-                $whitespace
-            )
-            """.stripWhitespace()
 
         // "[1.5]"
         private val bracketedLoneVersion = """
@@ -135,18 +108,13 @@ class MavenVersionRequirement: VersionRequirement {
 
         }
 
-        private fun String.stripWhitespace(): String {
-            return this
-                    .replace(" ", "")
-                    .replace("\n", "")
-                    .replace("\t", "")
-        }
+
 
         /**
-         * Verifies that [requirement] is a valid version requirement string according
+         * Verifies that [versionRequirement] is a valid version versionRequirement string according
          * to the Maven standard
          */
-        fun isValid(requirement: String) = regex.matches(requirement)
+        fun isValid(versionRequirement: String) = regex.matches(versionRequirement)
     }
 
     private val validVersions: Array<VersionRange>

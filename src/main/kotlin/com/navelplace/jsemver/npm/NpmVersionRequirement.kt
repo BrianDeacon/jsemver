@@ -2,6 +2,7 @@ package com.navelplace.jsemver.npm
 
 import com.navelplace.jsemver.InvalidRequirementFormatException
 import com.navelplace.jsemver.RequirementType
+import com.navelplace.jsemver.ThrowingRequirementErrorListener
 import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRequirement
 import com.navelplace.jsemver.antlr.NPMLexer
@@ -54,6 +55,7 @@ class NpmVersionRequirement : VersionRequirement {
 
             return escaped
         }
+
 
         private fun validate(major: String, minor: String?, patch: String?, preRelease: Array<String>? = null, build: Array<String>? = null) {
             val preReleaseArray = preRelease ?: emptyArray()
@@ -131,6 +133,14 @@ class NpmVersionRequirement : VersionRequirement {
 
             return Version(majorInt, minorInt, patchInt, preReleaseArray, buildArray)
         }
+
+        fun isValid(versionRequirement: String) =
+                try {
+                    NpmVersionRequirement(versionRequirement)
+                    true
+                } catch (e: InvalidRequirementFormatException) {
+                    false
+                }
     }
 
     private val requirement: Clause

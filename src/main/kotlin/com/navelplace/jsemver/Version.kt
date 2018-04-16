@@ -2,13 +2,9 @@ package com.navelplace.jsemver
 
 import com.navelplace.jsemver.RequirementType.*
 import com.navelplace.jsemver.antlr.VersionLexer
-import com.navelplace.jsemver.npm.ThrowingErrorListener
 import com.navelplace.jsemver.antlr.VersionParser as AntlrParser
-import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.RecognitionException
-import org.antlr.v4.runtime.Recognizer
 
 /**
  * Represents a semver pattern `major.minor.patch[-preRelease[+metadata]]`

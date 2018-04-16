@@ -1,7 +1,9 @@
 package com.navelplace.jsemver
 
+import com.navelplace.jsemver.cocoapods.CocoaPodsVersionRequirement
 import com.navelplace.jsemver.maven.MavenVersionRequirement
 import com.navelplace.jsemver.npm.NpmVersionRequirement
+import com.navelplace.jsemver.ruby.RubyGemsVersionRequirement
 
 /**
  * Indicates a specific [VersionRequirement] implementation
@@ -9,7 +11,9 @@ import com.navelplace.jsemver.npm.NpmVersionRequirement
 enum class RequirementType {
     SIMPLE,
     MAVEN,
-    NPM
+    NPM,
+    COCOAPODS,
+    RUBY
 }
 
 /**
@@ -42,14 +46,21 @@ abstract class VersionRequirement protected constructor(requirement: String,
                 RequirementType.SIMPLE -> SimpleVersionRequirement(versionRequirement)
                 RequirementType.MAVEN -> MavenVersionRequirement(versionRequirement)
                 RequirementType.NPM -> NpmVersionRequirement(versionRequirement)
+                RequirementType.COCOAPODS -> CocoaPodsVersionRequirement(versionRequirement)
+                RequirementType.RUBY -> RubyGemsVersionRequirement(versionRequirement)
+            }
+        }
+
+        @JvmStatic @JvmOverloads fun isValid(versionRequirement: String, requirementType: RequirementType = RequirementType.SIMPLE): Boolean {
+            return when (requirementType) {
+                RequirementType.SIMPLE -> SimpleVersionRequirement.isValid(versionRequirement)
+                RequirementType.MAVEN -> MavenVersionRequirement.isValid(versionRequirement)
+                RequirementType.NPM -> NpmVersionRequirement.isValid(versionRequirement)
+                RequirementType.COCOAPODS -> CocoaPodsVersionRequirement.isValid(versionRequirement)
+                RequirementType.RUBY -> RubyGemsVersionRequirement.isValid(versionRequirement)
             }
         }
     }
-
-//    /**
-//     * @suppress
-//     */
-//    protected abstract fun calculate(rawRequirement: String): Array<VersionRange>
 
     /**
      * Returns true if the requirement is met by the given [version]

@@ -4,7 +4,7 @@ import com.navelplace.jsemver.Version
 import com.navelplace.jsemver.VersionRange
 import com.navelplace.jsemver.antlr.MavenLexer
 import com.navelplace.jsemver.antlr.MavenParser
-import com.navelplace.jsemver.npm.ThrowingRequirementErrorListener
+import com.navelplace.jsemver.ThrowingRequirementErrorListener
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
