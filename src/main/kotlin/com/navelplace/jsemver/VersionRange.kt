@@ -38,6 +38,9 @@ class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: 
         return version.newerThan(min) && version.olderThan(max)
     }
 
+    /**
+     * @suppress
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -52,6 +55,9 @@ class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: 
         return true
     }
 
+    /**
+     * @suppress
+     */
     override fun hashCode(): Int {
         var result = min.hashCode()
         result = 31 * result + minInclusive.hashCode()
@@ -60,6 +66,9 @@ class VersionRange(val min: Version, val minInclusive: Boolean = true, val max: 
         return result
     }
 
+    /**
+     * @suppress
+     */
     override fun toString(): String {
         return "VersionRange(min=$min, minInclusive=$minInclusive, max=$max, maxInclusive=$maxInclusive)"
     }

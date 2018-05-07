@@ -40,7 +40,7 @@ class Version : Comparable<Version> {
         /**
          * No [Version] is less than [MIN_VERSION]
          */
-        @JvmField val MIN_VERSION = Version(Int.MIN_VALUE,Int.MIN_VALUE,Int.MIN_VALUE)
+        @JvmField val MIN_VERSION = Version(0,0,0)
 
         /**
          * Checks [version] for correct formatting
@@ -113,8 +113,36 @@ class Version : Comparable<Version> {
 
     }
 
+    /**
+     * Creates an instance of Version with the given major, minor and patch versions
+     * @param major The major version number
+     * @param minor The minor version number
+     * @param patch The patch version number
+     */
+    constructor(major: Int, minor: Int, patch: Int): this(major, minor, patch, emptyArray(), emptyArray())
 
-    constructor(major: Int, minor: Int, patch: Int, prerelease: Array<String> = emptyArray(), build: Array<String> = emptyArray()) {
+    /**
+     * Creates an instance of Version with the given major, minor and patch versions,
+     * and prerelease quaifiers.
+     * Prerelease qualifiers will be delimited by '.'
+     * @param major The major version number
+     * @param minor The minor version number
+     * @param patch The patch version number
+     * @param prerelease An array of prerelease elements
+     */
+    constructor(major: Int, minor: Int, patch: Int, prerelease: Array<String>): this(major, minor, patch, prerelease, emptyArray())
+
+    /**
+     * Creates an instance of Version with the given major, minor and patch versions, as well as
+     * prerelease and build elements.
+     * Prerelease and build elements will be delimited with '.'
+     * @param major The major version number
+     * @param minor The minor version number
+     * @param patch The patch version number
+     * @param prerelease An array of prerelease elements
+     * @param build An array of build elements
+     */
+    constructor(major: Int, minor: Int, patch: Int, prerelease: Array<String>, build: Array<String>) {
         this.major = major
         this.minor = minor
         this.patch = patch
@@ -125,6 +153,9 @@ class Version : Comparable<Version> {
         val buildString = if (metadata.isNotEmpty()) "+$metadata" else ""
         val tail = if(preRelease.isNotEmpty()) "-$preRelease$buildString" else ""
         this.raw = "$major.$minor.$patch$tail"
+        if (!isValid(raw)) {
+            throw InvalidVersionFormatException(raw);
+        }
     }
 
     /**

@@ -1,5 +1,11 @@
+/**
+ * @suppress
+ */
 package com.navelplace.jsemver.regex
 
+/**
+ * @suppress
+ */
 fun String.stripWhitespace(): String {
     return this
             .replace(" ", "")

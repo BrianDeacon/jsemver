@@ -26,6 +26,13 @@ class CocoaPodsVersionRequirementTest {
     }
 
     @Test
+    fun `Can do a less than or equal to`() {
+        assertTrue { CocoaPodsVersionRequirement("<=1.1.0").isSatisfiedBy("1.0.9") }
+        assertTrue { CocoaPodsVersionRequirement("<=1.1.0").isSatisfiedBy("1.1.0") }
+        assertFalse { CocoaPodsVersionRequirement("<=1.1.0").isSatisfiedBy("1.1.1") }
+    }
+
+    @Test
     fun `Can do a greater than`() {
         assertTrue { CocoaPodsVersionRequirement(">0.1.0").isSatisfiedBy("1.0.9") }
         assertFalse { CocoaPodsVersionRequirement(">0.1.0").isSatisfiedBy("0.1.0") }
@@ -37,6 +44,43 @@ class CocoaPodsVersionRequirementTest {
         assertTrue { CocoaPodsVersionRequirement(">=0.1.0").isSatisfiedBy("1.0.9") }
         assertTrue { CocoaPodsVersionRequirement(">=0.1.0").isSatisfiedBy("0.1.0") }
         assertFalse { CocoaPodsVersionRequirement(">=0.1.0").isSatisfiedBy("0.0.1") }
+    }
+
+    @Test
+    fun `Can do a twiddle wakka`() {
+        assertTrue { CocoaPodsVersionRequirement("~>1.1.1").isSatisfiedBy("1.1.1")}
+        assertTrue { CocoaPodsVersionRequirement("~>1.1.1").isSatisfiedBy("1.1.2")}
+        assertTrue { CocoaPodsVersionRequirement("~>1.1.1").isSatisfiedBy("1.1.9")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1.1").isSatisfiedBy("1.2.0")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1.1").isSatisfiedBy("1.1.0")}
+
+        assertTrue { CocoaPodsVersionRequirement("~>0.1.2").isSatisfiedBy("0.1.2")}
+        assertTrue { CocoaPodsVersionRequirement("~>0.1.2").isSatisfiedBy("0.1.9")}
+        assertFalse { CocoaPodsVersionRequirement("~>0.1.2").isSatisfiedBy("0.2.0")}
+        assertFalse { CocoaPodsVersionRequirement("~>0.1.2").isSatisfiedBy("0.1.1")}
+
+        assertTrue { CocoaPodsVersionRequirement("~>1.1.2").isSatisfiedBy("1.1.2")}
+        assertTrue { CocoaPodsVersionRequirement("~>1.1.2").isSatisfiedBy("1.1.9")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1.2").isSatisfiedBy("1.2.0")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1.2").isSatisfiedBy("1.0.9")}
+
+        assertTrue { CocoaPodsVersionRequirement("~>0.1").isSatisfiedBy("0.1.0")}
+        assertTrue { CocoaPodsVersionRequirement("~>0.1").isSatisfiedBy("0.9.9")}
+        assertFalse { CocoaPodsVersionRequirement("~>0.1").isSatisfiedBy("1.0.0")}
+        assertFalse { CocoaPodsVersionRequirement("~>0.1").isSatisfiedBy("0.0.9")}
+
+        assertTrue { CocoaPodsVersionRequirement("~>1.1").isSatisfiedBy("1.1.0")}
+        assertTrue { CocoaPodsVersionRequirement("~>1.1").isSatisfiedBy("1.9.9")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1").isSatisfiedBy("2.0.0")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1").isSatisfiedBy("1.0.9")}
+
+        assertTrue { CocoaPodsVersionRequirement("~>0").isSatisfiedBy("0.0.0")}
+        assertTrue { CocoaPodsVersionRequirement("~>0").isSatisfiedBy("9.9.9")}
+
+        assertTrue { CocoaPodsVersionRequirement("~>1").isSatisfiedBy("1.0.0")}
+        assertTrue { CocoaPodsVersionRequirement("~>1").isSatisfiedBy("9.9.9")}
+        assertFalse { CocoaPodsVersionRequirement("~>1.1").isSatisfiedBy("0.9.9")}
+
     }
 
     @Test

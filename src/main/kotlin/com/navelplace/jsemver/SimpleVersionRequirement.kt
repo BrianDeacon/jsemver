@@ -28,7 +28,19 @@ class SimpleVersionRequirement: VersionRequirement {
             $dollar
             """.stripWhitespace().toRegex()
 
-        fun isValid(versionRequirement: String) = regex.matches(versionRequirement)
+
+
+        /**
+         * Verifies that [versionRequirement] is a valid requirement string
+         * @param versionRequirement The requirement as a string
+         * @return True if the provided string is valid
+         */
+        @JvmStatic fun isValid(versionRequirement: String) = regex.matches(versionRequirement)
+
+        /**
+         * Parses [versionRequirement] into an instance of [SimpleVersionRequirement]
+         */
+        @JvmStatic fun fromString(versionRequirement: String) = SimpleVersionRequirement(versionRequirement)
     }
     private val validVersions: VersionRange
 

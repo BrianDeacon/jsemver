@@ -14,7 +14,6 @@ import com.navelplace.jsemver.regex.stripWhitespace
 /**
  * [VersionRequirement] implementation based on Maven's version range specification
  * at https://maven.apache.org/enforcer/enforcer-rules/versionRanges.html
- *
  */
 class MavenVersionRequirement: VersionRequirement {
 
@@ -108,13 +107,18 @@ class MavenVersionRequirement: VersionRequirement {
 
         }
 
-
+        /**
+         * Verifies that [versionRequirement] is a valid requirement string according
+         * to the Maven standard
+         * @param versionRequirement The Maven requirement as a string
+         * @return True if the provided string is a valid Maven requirement
+         */
+        @JvmStatic fun isValid(versionRequirement: String) = regex.matches(versionRequirement)
 
         /**
-         * Verifies that [versionRequirement] is a valid version versionRequirement string according
-         * to the Maven standard
+         * Parses [versionRequirement] into an instance of [MavenVersionRequirement]
          */
-        fun isValid(versionRequirement: String) = regex.matches(versionRequirement)
+        @JvmStatic fun fromString(versionRequirement: String) = MavenVersionRequirement(versionRequirement)
     }
 
     private val validVersions: Array<VersionRange>
@@ -129,9 +133,14 @@ class MavenVersionRequirement: VersionRequirement {
 
     override fun isSatisfiedBy(version: Version) = validVersions.any { it.contains(version) }
 
-    //It's fun sized!
+    /**
+     * @suppress
+     */
     fun size() = validVersions.size
 
+    /**
+     * @suppress
+     */
     operator fun get(index: Int) = validVersions.get(index)
 }
 

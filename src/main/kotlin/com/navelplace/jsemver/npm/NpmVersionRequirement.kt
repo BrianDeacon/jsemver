@@ -10,6 +10,10 @@ import com.navelplace.jsemver.antlr.NPMParser
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
+/**
+ * [VersionRequirement] implementation based on the NPM spec:
+ * https://www.npmjs.com/package/semver
+ */
 class NpmVersionRequirement : VersionRequirement {
 
     /**
@@ -30,13 +34,15 @@ class NpmVersionRequirement : VersionRequirement {
         /*
         The characters "x", "X", "v", "V", and "-" are ambiguous for the parser.
         v1.1.1-snapshot-x-v.v.1.2.3
-        Remove the extraneous v in "v1.1.1-vvv", but leave other v's alone.
-        In "1.1.1-SNAPSHOT-1" make the prerelease separator a distinct character.
-        In "2.0 - 3.0" make the dash yet another distinct character
+        Remove the extraneous v in "v1.1.1-vvv", but leave other v's alone. (v1.1.1-vvv becomes 1.1.1-vvv)
+        In "1.1.1-SNAPSHOT-1" make the "-" before "SNAPSHOT" a distinct character. (\uFF0D is a wider dash: －)
+        In "2.0 - 3.0" make the dash yet another distinct character (\u2194 is a funky arrow thingy: ↔)
         Change the x's in "1.x.X" to "*". But don't change x's in "1.1.1-x.y.z"
         After escaping, v's, x's and dashes will only appear in either the prerelease or build.
         The following are then unambiguous to ANTLR:
-        1.1.1[DASH]PrereleaseWithXandV+buildWithXAndV || 1.0 [ARROW] 2.0 || 1.*.*
+        1.1.1[DASH]PrereleaseWithXandV-and-some-dashes+buildWithXAndV || 1.0 [ARROW] 2.0 || 1.*.*
+        or
+        1.1.1－PrereleaseWithXandV-and-some-dashes+buildWithXAndV || 1.0 ↔ 2.0 || 1.*.*
          */
         private fun disambiguate(requirement: String): String {
             var escaped = requirement.replace(dashEscape, " ${arrow} ")
@@ -134,13 +140,24 @@ class NpmVersionRequirement : VersionRequirement {
             return Version(majorInt, minorInt, patchInt, preReleaseArray, buildArray)
         }
 
-        fun isValid(versionRequirement: String) =
+        /**
+         * Verifies that [versionRequirement] is a valid requirement string according
+         * to the NPM standard
+         * @param versionRequirement The NPM requirement as a string
+         * @return True if the provided string is a valid NPM requirement
+         */
+        @JvmStatic fun isValid(versionRequirement: String) =
                 try {
                     NpmVersionRequirement(versionRequirement)
                     true
                 } catch (e: InvalidRequirementFormatException) {
                     false
                 }
+
+        /**
+         * Parses [versionRequirement] into an instance of [NpmVersionRequirement]
+         */
+        @JvmStatic fun fromString(versionRequirement: String) = NpmVersionRequirement(versionRequirement)
     }
 
     private val requirement: Clause

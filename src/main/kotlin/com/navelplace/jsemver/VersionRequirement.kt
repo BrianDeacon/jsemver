@@ -28,7 +28,10 @@ enum class RequirementType {
  * @see NpmVersionRequirement
  */
 abstract class VersionRequirement protected constructor(requirement: String,
-                                                        val type: RequirementType) {
+                                                        /** @suppress */val type: RequirementType) {
+    /**
+     * @suppress
+     */
     protected val rawRequirement: String = requirement.trim()
 
     /**
@@ -43,14 +46,20 @@ abstract class VersionRequirement protected constructor(requirement: String,
          */
         @JvmStatic @JvmOverloads fun fromString(versionRequirement: String, requirementType: RequirementType = RequirementType.SIMPLE): VersionRequirement {
             return when (requirementType) {
-                RequirementType.SIMPLE -> SimpleVersionRequirement(versionRequirement)
-                RequirementType.MAVEN -> MavenVersionRequirement(versionRequirement)
-                RequirementType.NPM -> NpmVersionRequirement(versionRequirement)
-                RequirementType.COCOAPODS -> CocoaPodsVersionRequirement(versionRequirement)
-                RequirementType.RUBY -> RubyGemsVersionRequirement(versionRequirement)
+                RequirementType.SIMPLE -> SimpleVersionRequirement.fromString(versionRequirement)
+                RequirementType.MAVEN -> MavenVersionRequirement.fromString(versionRequirement)
+                RequirementType.NPM -> NpmVersionRequirement.fromString(versionRequirement)
+                RequirementType.COCOAPODS -> CocoaPodsVersionRequirement.fromString(versionRequirement)
+                RequirementType.RUBY -> RubyGemsVersionRequirement.fromString(versionRequirement)
             }
         }
 
+        /**
+         * Returns true if the [versionRequirement] supplied as defined by the standard referenced by the [requirementType]
+         * @param versionRequirement The requirement string
+         * @param requirementType The [RequirementType] that the given version refers to
+         * @return True if the requirement string is valid for the format specified
+         */
         @JvmStatic @JvmOverloads fun isValid(versionRequirement: String, requirementType: RequirementType = RequirementType.SIMPLE): Boolean {
             return when (requirementType) {
                 RequirementType.SIMPLE -> SimpleVersionRequirement.isValid(versionRequirement)
@@ -81,21 +90,5 @@ abstract class VersionRequirement protected constructor(requirement: String,
      * @return The raw string representation of the requirement
      */
     override fun toString() = rawRequirement
-
-//    /**
-//     * Returns individual [VersionRange] instances that satisfy this requirement
-//     * @return An individual [VersionRange]
-//     * @param index The index of the requested range
-//     */
-//    operator fun get(index: Int) = validRanges[index]
-
-//    /**
-//     * The number of individual [VersionRange] instances that satisfy this requirement
-//     */
-//    fun size() = validRanges.size
-
-//    init {
-//        validRanges = calculate(rawRequirement)
-//    }
 }
 
