@@ -93,6 +93,8 @@ class Version : Comparable<Version> {
         val parser = AntlrParser(CommonTokenStream(lexer))
 
         val listener = ThrowingErrorListener(raw)
+        lexer.removeErrorListeners()
+        parser.removeErrorListeners()
         lexer.addErrorListener(listener)
         parser.addErrorListener(listener)
 
